@@ -24,11 +24,15 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-(no sessions yet)
+- Cloned the repository and read all documentation (docs/, AGENT_PROMPT.md, PROGRESS.md)
+- Created initial folder structure with `shared/`, `runtime/`, and `docs/` directories
+- The `shared/types.ts` file was already present (generated from Contracts.md)
+- Runtime skeleton partially exists with basic structure in `runtime/src/`
+- Committed and pushed initial project structure to GitHub
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None.
+Verifying the existing `shared/types.ts` against `docs/02-Contracts/Contracts.md` to ensure it matches the specification. Then will continue with completing the Runtime skeleton (SQLite storage layer, WS transport + token auth).
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
