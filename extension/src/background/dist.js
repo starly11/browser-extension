@@ -127,6 +127,7 @@
           id: generateId(),
           taskId: null,
           payload: {
+            workspaceId: message.workspaceId || "default-workspace",
             tabId: message.tabId,
             providerId: message.providerId
           },

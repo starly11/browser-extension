@@ -5,6 +5,7 @@ let currentTabId = null;
 let isConnectedToRuntime = false;
 let isTabConnected = false;
 let currentProviderId = null;
+let currentWorkspaceId = 'default-workspace'; // Default workspace ID
 
 // DOM elements
 const statusEl = document.getElementById('status');
@@ -121,7 +122,8 @@ async function connectTab() {
     await chrome.runtime.sendMessage({
       type: 'CONNECT_TAB',
       tabId: currentTabId,
-      providerId: currentProviderId
+      providerId: currentProviderId,
+      workspaceId: currentWorkspaceId
     });
     
     isTabConnected = true;
