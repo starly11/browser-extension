@@ -167,7 +167,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         payload: {
           workspaceId: message.workspaceId || 'default-workspace',
           tabId: message.tabId,
-          providerId: message.providerId
+          providerId: message.providerId,
+          agentMode: message.agentMode || 'manual'  // Add default agentMode
         },
         ts: new Date().toISOString()
       };

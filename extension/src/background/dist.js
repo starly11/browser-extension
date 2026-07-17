@@ -129,7 +129,9 @@
           payload: {
             workspaceId: message.workspaceId || "default-workspace",
             tabId: message.tabId,
-            providerId: message.providerId
+            providerId: message.providerId,
+            agentMode: message.agentMode || "manual"
+            // Add default agentMode
           },
           ts: (/* @__PURE__ */ new Date()).toISOString()
         };
