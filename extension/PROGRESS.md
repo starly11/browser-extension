@@ -10,8 +10,8 @@
 - [x] `shared/types.ts` generated from `docs/02-Contracts/Contracts.md` (already existed, verified against Contracts.md)
 - [x] Runtime skeleton: SQLite storage layer, WS transport + token auth (implemented and verified - server starts successfully on ws://127.0.0.1:8765)
 - [x] Extension skeleton: manifest, popup (connect/disconnect only), background relay (implemented and pushed - includes manifest.json, src/popup/, src/background/, src/content/ with basic adapter implementations for ChatGPT, Claude, Gemini)
-- [ ] One Adapter implemented (provider: __________)
-- [ ] Tool Engine + `filesystem.attach(path)` (manual path)
+- [x] One Adapter implemented (provider: ChatGPT) - Full implementation with strategy chain pattern, 9 interface methods, resilient DOM selection
+- [x] Tool Engine + `filesystem.attach(path)` (manual path) - Implemented with read/write/list operations, sandbox security, tool registry
 - [ ] Walking skeleton verified end-to-end (typed path → file lands in connected tab)
 - [ ] Semantic attachment tool (grep + import graph + git blame)
 - [ ] Task Engine + Planner/Worker split
@@ -24,19 +24,19 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Implemented full ChatGPT adapter in `src/content/adapters/chatgpt.js` with strategy chain pattern per Adapter Resilience.md
-- Adapter implements all 9 required interface methods: detect(), newChat(), sendPrompt(), attachFiles(), waitUntilFinished(), readResponse(), stopGeneration(), rotate(), healthCheck()
-- Strategy chain includes 5 strategies per element type (inputField, sendButton, newChatButton, responseContainer, stopButton, fileInput, attachButton) prioritizing: 1) ARIA/accessibility, 2) data-testid attributes, 3) placeholder/text content, 4) structural heuristics, 5) fallback selectors
-- File attachment implemented with DataTransfer API for programmatic file setting, with fallback to manual attachment logging
-- Response detection includes multiple indicators: generating/streaming classes, cursor/typing indicators, incomplete code block detection
-- Refactored `src/content/index.js` to import ChatGPT adapter from separate module, removed inline adapter implementations
-- Marked Claude and Gemini adapters as TODO for future implementation as separate modules
-- Committed with message: "Implement ChatGPT adapter with strategy chain for resilient DOM selection"
+- Implemented Tool Engine with registry pattern in `runtime/src/tools/index.ts` supporting dynamic tool registration and invocation
+- Created Filesystem Tool in `runtime/src/tools/filesystem.ts` with three operations: read, write, list
+- Added sandbox security to filesystem tool restricting access to FILESYSTEM_SANDBOX environment variable directory
+- Integrated tool engine into runtime message handlers for CREATE_TOOL, INVOKE_TOOL, TOOL_RESULT messages
+- Updated runtime index.ts to initialize tools registry and handle tool-related WebSocket messages
+- Fixed tsconfig.json paths for proper shared types resolution
+- Built runtime successfully (npm run build passes)
+- Committed with message: "Implement Tool Engine + Filesystem tool with sandboxing"
 - Pushed to GitHub successfully
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - ChatGPT adapter implementation complete and pushed. Next step: Tool Engine + filesystem.attach(path) per Build_Guide.md step 5.
+None - Tool Engine implementation complete. Next step: Walking skeleton end-to-end verification.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
@@ -49,6 +49,7 @@ None - ChatGPT adapter implementation complete and pushed. Next step: Tool Engin
 ## Decision Log Additions Made During Build
 <!-- Any new architectural decision made and resolved during implementation gets logged here AND back-ported to the relevant doc's own Decision Log section. -->
 - Decided to implement ChatGPT adapter in JavaScript (.js) rather than TypeScript (.ts) to match existing content script pattern in src/content/index.js
+- Implemented filesystem tool with sandbox security by default, using FILESYSTEM_SANDBOX env var or ./sandbox fallback
 
 ## Test Status
 - Unit tests passing: unknown (run them before trusting this)
@@ -56,4 +57,4 @@ None - ChatGPT adapter implementation complete and pushed. Next step: Tool Engin
 
 ## Next Concrete Step
 <!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
-Implement Tool Engine + filesystem.attach(path): Create `runtime/src/tools/filesystem.ts` with attach(path) function that reads file at given path and returns content. This tool will be called by Task Engine when Planner requests file attachment. Tool should: 1) Accept absolute or relative path, 2) Read file content, 3) Return { status: 'success', data: { path, content } } or { status: 'error', error: 'message' }. Then wire this tool into the runtime's tool registry so it can be invoked via ToolRequest messages.
+Walking skeleton end-to-end verification: 1) Load extension in Chrome (chrome://extensions → Load unpacked → select extension/src), 2) Start runtime (`cd runtime && npm start`), 3) Click Connect in popup, 4) Open ChatGPT tab, 5) Send prompt requesting file read operation, 6) Verify ToolRequest flows from extension → background → runtime → tool handler → response back → ChatGPT adapter displays result. Document any issues found.
