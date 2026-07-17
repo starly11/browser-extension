@@ -24,22 +24,19 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Reorganized project structure: moved all extension code to `/extension/` folder, supporting files to `/files/` folder for cleaner organization
-- Implemented Extension skeleton per Build_Guide.md step 3:
-  - Updated `manifest.json` with Manifest V3 configuration (permissions: activeTab, storage, scripting; host_permissions: <all_urls>; icons configured)
-  - Created SVG icons (16x16, 48x48, 128x128) for the extension
-  - Verified `src/popup/index.html` - Popup UI with Runtime status display, connect/disconnect buttons, and Agent Mode selector
-  - Verified `src/popup/popup.js` - Popup logic for checking Runtime status, connecting/disconnecting tabs, setting agent mode
-  - Verified `src/background/index.js` - Background service worker acting as relay between popup/content and Runtime WebSocket server (ws://127.0.0.1:8765)
-  - Verified `src/content/index.js` - Content script hosting adapter implementations for ChatGPT, Claude, and Gemini providers
-- Adapter implementations include all 9 interface methods from BrowserAdapter interface (detect, newChat, sendPrompt, attachFiles, waitUntilFinished, readResponse, stopGeneration, rotate, healthCheck)
-- Extension follows "dumb relay" pattern from Extension.md - no planning/decision-making, only relays messages between Runtime and adapters
-- Committed and pushed changes with message: "Add extension skeleton: manifest, popup UI, background relay, content script with adapters"
-- Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support
+- Implemented full ChatGPT adapter in `src/content/adapters/chatgpt.js` with strategy chain pattern per Adapter Resilience.md
+- Adapter implements all 9 required interface methods: detect(), newChat(), sendPrompt(), attachFiles(), waitUntilFinished(), readResponse(), stopGeneration(), rotate(), healthCheck()
+- Strategy chain includes 5 strategies per element type (inputField, sendButton, newChatButton, responseContainer, stopButton, fileInput, attachButton) prioritizing: 1) ARIA/accessibility, 2) data-testid attributes, 3) placeholder/text content, 4) structural heuristics, 5) fallback selectors
+- File attachment implemented with DataTransfer API for programmatic file setting, with fallback to manual attachment logging
+- Response detection includes multiple indicators: generating/streaming classes, cursor/typing indicators, incomplete code block detection
+- Refactored `src/content/index.js` to import ChatGPT adapter from separate module, removed inline adapter implementations
+- Marked Claude and Gemini adapters as TODO for future implementation as separate modules
+- Committed with message: "Implement ChatGPT adapter with strategy chain for resilient DOM selection"
+- Pushed to GitHub successfully
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Extension skeleton complete and pushed. Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support per Browser Adapter.md.
+None - ChatGPT adapter implementation complete and pushed. Next step: Tool Engine + filesystem.attach(path) per Build_Guide.md step 5.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
@@ -51,7 +48,7 @@ None - Extension skeleton complete and pushed. Next step: Implement one full Ada
 
 ## Decision Log Additions Made During Build
 <!-- Any new architectural decision made and resolved during implementation gets logged here AND back-ported to the relevant doc's own Decision Log section. -->
-(none yet)
+- Decided to implement ChatGPT adapter in JavaScript (.js) rather than TypeScript (.ts) to match existing content script pattern in src/content/index.js
 
 ## Test Status
 - Unit tests passing: unknown (run them before trusting this)
@@ -59,4 +56,4 @@ None - Extension skeleton complete and pushed. Next step: Implement one full Ada
 
 ## Next Concrete Step
 <!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
-Implement ChatGPT Adapter fully: refactor `src/content/index.js` to move ChatGPT adapter into `src/adapters/chatgpt.ts`, implement proper DOM selectors for current ChatGPT UI (textarea, send button, response elements), implement file attachment via click-and-paste or file input interaction, add error handling for UI changes, and ensure all 9 BrowserAdapter interface methods work correctly. Test by loading extension in Chrome, connecting a ChatGPT tab, and verifying basic send/receive works.
+Implement Tool Engine + filesystem.attach(path): Create `runtime/src/tools/filesystem.ts` with attach(path) function that reads file at given path and returns content. This tool will be called by Task Engine when Planner requests file attachment. Tool should: 1) Accept absolute or relative path, 2) Read file content, 3) Return { status: 'success', data: { path, content } } or { status: 'error', error: 'message' }. Then wire this tool into the runtime's tool registry so it can be invoked via ToolRequest messages.
