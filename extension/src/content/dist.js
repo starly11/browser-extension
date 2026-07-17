@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   // src/content/adapters/chatgpt.js
   console.log("[AIOS ChatGPT Adapter] Loading adapter");
@@ -535,4 +536,7 @@
     });
   }
   console.log("[AIOS Content] Content script initialized");
+  window.__debug_detectProvider = detectProvider;
+  window.__debug_loadAdapter = loadAdapter;
+  window.__debug_createChatGPTAdapter = createChatGPTAdapter;
 })();
