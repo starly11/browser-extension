@@ -30,14 +30,22 @@ wss.on('connection', (ws) => {
           }));
           console.log(`✅ Auth sent to ${clientId}, token: ${authToken}`);
           
-          // After successful auth, send a test prompt after 3 seconds
+          // After successful auth, wait for CONNECT_TAB to get real tabId
+          console.log(`⏳ Waiting for CONNECT_TAB from extension...`);
+          break;
+
+        case 'CONNECT_TAB':
+          const connectedTabId = message.payload?.tabId;
+          console.log(`📌 Tab connected: ${connectedTabId}`);
+          
+          // Now send a test prompt after 3 seconds using the REAL tabId
           setTimeout(() => {
             if (ws.readyState === ws.OPEN) {
-              console.log(`📤 Sending automated test instruction to ${clientId}...`);
+              console.log(`📤 Sending automated test instruction to tab ${connectedTabId}...`);
               ws.send(JSON.stringify({
                 type: 'RELAY_TO_ADAPTER',
                 payload: {
-                  tabId: 'test-tab-1',
+                  tabId: connectedTabId,
                   instruction: {
                     action: 'SEND_PROMPT',
                     prompt: 'Hello from your fully automated local AIOS runtime pipeline! This is an automated test message.'
@@ -47,10 +55,6 @@ wss.on('connection', (ws) => {
               }));
             }
           }, 3000);
-          break;
-
-        case 'CONNECT_TAB':
-          console.log(`📌 Tab connected: ${message.payload?.tabId}`);
           break;
 
         case 'DISCONNECT_TAB':
