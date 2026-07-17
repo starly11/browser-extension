@@ -36,7 +36,8 @@ async function init() {
 function detectProvider(url) {
   if (!url) return 'unknown';
   
-  if (url.includes('chat.openai.com')) {
+  // Updated to support both the modern chatgpt.com domain and legacy domain
+  if (url.includes('chatgpt.com') || url.includes('chat.openai.com')) {
     return 'chatgpt';
   } else if (url.includes('claude.ai') || url.includes('anthropic.com')) {
     return 'claude';
