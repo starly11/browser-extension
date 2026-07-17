@@ -321,38 +321,76 @@ export function createChatGPTAdapter() {
      * @param {{ tabId: string, chatId: string, providerId: string }} chatHandle
      * @param {string} text
      */
-    sendPrompt(chatHandle, text) {
-      console.log('[AIOS ChatGPT Adapter] Sending prompt:', text.substring(0, 50) + '...');
+    sendPrompt(chatHandleOrText, text) {
+      const actualText = text || chatHandleOrText;
+      console.log("[AIOS ChatGPT Adapter] Sending prompt:", actualText.substring(0, 50) + "...");
       
-      const textarea = findElement('inputField');
+      const textarea = findElement("inputField");
       if (!textarea) {
-        console.error('[AIOS ChatGPT Adapter] Cannot send prompt: input field not found');
+        console.error("[AIOS ChatGPT Adapter] Cannot send prompt: input field not found");
         return;
       }
       
-      // Focus and set value
+      // Focus the textarea
       textarea.focus();
-      setTextareaValue(textarea, text);
       
-      // Small delay to ensure React picks up the change
+      // Try multiple ways to set the text
+      textarea.value = actualText;
+      
+      // Simulate typing each character (for React/Vue apps)
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+      textarea.dispatchEvent(new Event('change', { bubbles: true }));
+      
+      // Try execCommand as a fallback
+      try {
+        document.execCommand('selectAll', false, null);
+        document.execCommand('insertText', false, actualText);
+      } catch (e) {
+        console.warn("[AIOS ChatGPT Adapter] execCommand failed", e);
+      }
+      
+      // Update textarea again and ensure events are fired
+      setTextareaValue(textarea, actualText);
+      
+      // Wait a bit, then try to send
       setTimeout(() => {
-        const sendBtn = findElement('sendButton');
+        const sendBtn = findElement("sendButton");
+        
         if (sendBtn) {
+          console.log("[AIOS ChatGPT Adapter] Clicking send button (with mouse events)");
+          sendBtn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+          sendBtn.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
           sendBtn.click();
-          console.log('[AIOS ChatGPT Adapter] Clicked send button');
-        } else {
-          // Fallback: simulate Enter key
-          textarea.dispatchEvent(new KeyboardEvent('keydown', {
-            key: 'Enter',
-            code: 'Enter',
-            keyCode: 13,
-            which: 13,
-            bubbles: true,
-            cancelable: true
-          }));
-          console.log('[AIOS ChatGPT Adapter] Simulated Enter key press');
         }
-      }, 100);
+        
+        // Also try Enter key with proper events
+        console.log("[AIOS ChatGPT Adapter] Simulating Enter key press");
+        textarea.dispatchEvent(new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true
+        }));
+        textarea.dispatchEvent(new KeyboardEvent('keypress', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true
+        }));
+        textarea.dispatchEvent(new KeyboardEvent('keyup', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          which: 13,
+          bubbles: true,
+          cancelable: true
+        }));
+        
+      }, 500);
     },
     
     /**
@@ -360,59 +398,60 @@ export function createChatGPTAdapter() {
      * @param {{ tabId: string, chatId: string, providerId: string }} chatHandle
      * @param {File[]} files - Array of File objects
      */
-    attachFiles(chatHandle, files) {
-      console.log('[AIOS ChatGPT Adapter] Attaching files:', files.map(f => f.name));
+    attachFiles(chatHandleOrFiles, files) {
+      const actualFiles = files || chatHandleOrFiles;
+      console.log("[AIOS ChatGPT Adapter] Attaching files:", actualFiles.map((f) => f.name));
       
-      if (!files || files.length === 0) {
-        console.warn('[AIOS ChatGPT Adapter] No files to attach');
+      if (!actualFiles || actualFiles.length === 0) {
+        console.warn("[AIOS ChatGPT Adapter] No files to attach");
         return;
       }
       
       // Strategy 1: Use file input directly
-      const fileInput = findElement('fileInput');
+      const fileInput = findElement("fileInput");
       if (fileInput) {
-        console.log('[AIOS ChatGPT Adapter] Using direct file input');
+        console.log("[AIOS ChatGPT Adapter] Using direct file input");
         
         // Create a DataTransfer to set files programmatically
         const dataTransfer = new DataTransfer();
-        files.forEach(file => dataTransfer.items.add(file));
+        actualFiles.forEach((file) => dataTransfer.items.add(file));
         
         try {
           fileInput.files = dataTransfer.files;
-          fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-          console.log('[AIOS ChatGPT Adapter] Files attached via file input');
+          fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+          console.log("[AIOS ChatGPT Adapter] Files attached via file input");
           return;
         } catch (e) {
-          console.warn('[AIOS ChatGPT Adapter] Failed to set files on input:', e);
+          console.warn("[AIOS ChatGPT Adapter] Failed to set files on input:", e);
         }
       }
       
       // Strategy 2: Click attach button then use file picker
-      const attachBtn = findElement('attachButton');
+      const attachBtn = findElement("attachButton");
       if (attachBtn) {
-        console.log('[AIOS ChatGPT Adapter] Clicking attach button');
+        console.log("[AIOS ChatGPT Adapter] Clicking attach button");
         attachBtn.click();
         
         // Wait for file input to appear after clicking attach button
         setTimeout(() => {
-          const appearedFileInput = findElement('fileInput');
+          const appearedFileInput = findElement("fileInput");
           if (appearedFileInput) {
             const dataTransfer = new DataTransfer();
-            files.forEach(file => dataTransfer.items.add(file));
+            actualFiles.forEach((file) => dataTransfer.items.add(file));
             
             try {
               appearedFileInput.files = dataTransfer.files;
-              appearedFileInput.dispatchEvent(new Event('change', { bubbles: true }));
-              console.log('[AIOS ChatGPT Adapter] Files attached after clicking button');
+              appearedFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+              console.log("[AIOS ChatGPT Adapter] Files attached after clicking button");
               return;
             } catch (e) {
-              console.warn('[AIOS ChatGPT Adapter] Failed to set files after button click:', e);
+              console.warn("[AIOS ChatGPT Adapter] Failed to set files after button click:", e);
             }
           }
           
           // Strategy 3: If all else fails, log instructions for manual attachment
-          console.warn('[AIOS ChatGPT Adapter] Automatic file attachment failed. Manual attachment required.');
-          console.log('[AIOS ChatGPT Adapter] Files that need manual attachment:', files.map(f => ({
+          console.warn("[AIOS ChatGPT Adapter] Automatic file attachment failed. Manual attachment required.");
+          console.log("[AIOS ChatGPT Adapter] Files that need manual attachment:", actualFiles.map((f) => ({
             name: f.name,
             type: f.type,
             size: f.size
@@ -421,7 +460,7 @@ export function createChatGPTAdapter() {
         return;
       }
       
-      console.error('[AIOS ChatGPT Adapter] Cannot attach files: no attachment mechanism found');
+      console.error("[AIOS ChatGPT Adapter] Cannot attach files: no attachment mechanism found");
     },
     
     /**

@@ -91,11 +91,11 @@ wss.on('connection', (ws) => {
     }
   });
 
-  ws.on('close', () => {
-    console.log(`👋 Client disconnected: ${clientId}`);
+  ws.on("close", (code, reason) => {
+    console.log(`👋 Client disconnected: ${clientId} | Code: ${code}, Reason: ${reason.toString()}`);
   });
-
-  ws.on('error', (error) => {
+  
+  ws.on("error", (error) => {
     console.error(`⚠️ Error with client ${clientId}:`, error);
   });
 });
