@@ -3,6 +3,9 @@
 
 console.log('[AIOS Content] Content script loaded');
 
+// Import adapters
+import { createChatGPTAdapter } from './adapters/chatgpt.js';
+
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[AIOS Content] Received message:', message);
@@ -86,279 +89,20 @@ function detectProvider(url) {
 
 // Load adapter for provider
 async function loadAdapter(providerId) {
-  // For now, return a basic adapter implementation
-  // In the future, this will dynamically load from adapters/ folder
-  
+  // Dynamically load adapters from separate files
   if (providerId === 'chatgpt') {
     return createChatGPTAdapter();
   } else if (providerId === 'claude') {
-    return createClaudeAdapter();
+    // TODO: Create claude adapter in separate file
+    console.warn('[AIOS Content] Claude adapter not yet implemented as separate module');
+    return null;
   } else if (providerId === 'gemini') {
-    return createGeminiAdapter();
+    // TODO: Create gemini adapter in separate file
+    console.warn('[AIOS Content] Gemini adapter not yet implemented as separate module');
+    return null;
   }
   
   return null;
-}
-
-// Basic ChatGPT adapter
-function createChatGPTAdapter() {
-  return {
-    providerId: 'chatgpt',
-    
-    detect() {
-      return {
-        supported: document.querySelector('textarea[placeholder*="Message"]') !== null,
-        providerId: 'chatgpt',
-        version: 'unknown'
-      };
-    },
-    
-    newChat() {
-      // Click the new chat button
-      const newChatBtn = document.querySelector('button:has-text("New chat"), a:has-text("New chat")');
-      if (newChatBtn) {
-        newChatBtn.click();
-      }
-      
-      return {
-        tabId: String(chrome.runtime.id),
-        chatId: Date.now().toString(),
-        providerId: 'chatgpt'
-      };
-    },
-    
-    sendPrompt(chatHandle, text) {
-      const textarea = document.querySelector('textarea[placeholder*="Message"]');
-      if (textarea) {
-        textarea.value = text;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        // Find and click the send button
-        const sendBtn = textarea.closest('form')?.querySelector('button[type="submit"]');
-        if (sendBtn) {
-          sendBtn.click();
-        }
-      }
-    },
-    
-    attachFiles(chatHandle, files) {
-      // ChatGPT file attachment - would need to interact with file input
-      console.log('[AIOS Adapter] Attach files not yet implemented for ChatGPT');
-    },
-    
-    waitUntilFinished(chatHandle) {
-      // Wait for response to complete
-      return new Promise((resolve) => {
-        const checkComplete = () => {
-          const responseElement = document.querySelector('[data-message-author-role="assistant"]');
-          if (responseElement && !responseElement.classList.contains('generating')) {
-            resolve({
-              text: responseElement.textContent,
-              status: 'complete'
-            });
-          } else {
-            setTimeout(checkComplete, 500);
-          }
-        };
-        checkComplete();
-      });
-    },
-    
-    readResponse(chatHandle) {
-      const responseElements = document.querySelectorAll('[data-message-author-role="assistant"]');
-      const lastResponse = responseElements[responseElements.length - 1];
-      
-      return {
-        text: lastResponse ? lastResponse.textContent : '',
-        status: 'complete'
-      };
-    },
-    
-    stopGeneration(chatHandle) {
-      const stopBtn = document.querySelector('button:has-text("Stop generating")');
-      if (stopBtn) {
-        stopBtn.click();
-      }
-    },
-    
-    rotate(chatHandle) {
-      // Start a new chat for rotation
-      return this.newChat();
-    },
-    
-    healthCheck() {
-      const textarea = document.querySelector('textarea[placeholder*="Message"]');
-      return {
-        ok: textarea !== null,
-        reason: textarea ? 'Chat interface detected' : 'Chat interface not found'
-      };
-    }
-  };
-}
-
-// Basic Claude adapter
-function createClaudeAdapter() {
-  return {
-    providerId: 'claude',
-    
-    detect() {
-      return {
-        supported: document.querySelector('textarea[placeholder*="Message"]') !== null,
-        providerId: 'claude',
-        version: 'unknown'
-      };
-    },
-    
-    newChat() {
-      const newChatBtn = document.querySelector('button:has-text("New chat"), a:has-text("New chat")');
-      if (newChatBtn) {
-        newChatBtn.click();
-      }
-      
-      return {
-        tabId: String(chrome.runtime.id),
-        chatId: Date.now().toString(),
-        providerId: 'claude'
-      };
-    },
-    
-    sendPrompt(chatHandle, text) {
-      const textarea = document.querySelector('textarea[placeholder*="Message"]');
-      if (textarea) {
-        textarea.value = text;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        const sendBtn = document.querySelector('button[aria-label="Send Message"]');
-        if (sendBtn) {
-          sendBtn.click();
-        }
-      }
-    },
-    
-    attachFiles(chatHandle, files) {
-      console.log('[AIOS Adapter] Attach files not yet implemented for Claude');
-    },
-    
-    waitUntilFinished(chatHandle) {
-      return new Promise((resolve) => {
-        const checkComplete = () => {
-          const responseElement = document.querySelector('.message-assistant:last-child');
-          if (responseElement && !responseElement.classList.contains('streaming')) {
-            resolve({
-              text: responseElement.textContent,
-              status: 'complete'
-            });
-          } else {
-            setTimeout(checkComplete, 500);
-          }
-        };
-        checkComplete();
-      });
-    },
-    
-    readResponse(chatHandle) {
-      const responseElements = document.querySelectorAll('.message-assistant');
-      const lastResponse = responseElements[responseElements.length - 1];
-      
-      return {
-        text: lastResponse ? lastResponse.textContent : '',
-        status: 'complete'
-      };
-    },
-    
-    stopGeneration(chatHandle) {
-      const stopBtn = document.querySelector('button:has-text("Stop")');
-      if (stopBtn) {
-        stopBtn.click();
-      }
-    },
-    
-    rotate(chatHandle) {
-      return this.newChat();
-    },
-    
-    healthCheck() {
-      const textarea = document.querySelector('textarea[placeholder*="Message"]');
-      return {
-        ok: textarea !== null,
-        reason: textarea ? 'Chat interface detected' : 'Chat interface not found'
-      };
-    }
-  };
-}
-
-// Basic Gemini adapter
-function createGeminiAdapter() {
-  return {
-    providerId: 'gemini',
-    
-    detect() {
-      return {
-        supported: document.querySelector('textarea') !== null,
-        providerId: 'gemini',
-        version: 'unknown'
-      };
-    },
-    
-    newChat() {
-      return {
-        tabId: String(chrome.runtime.id),
-        chatId: Date.now().toString(),
-        providerId: 'gemini'
-      };
-    },
-    
-    sendPrompt(chatHandle, text) {
-      const textarea = document.querySelector('textarea');
-      if (textarea) {
-        textarea.value = text;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        const sendBtn = document.querySelector('button[aria-label="Send"]');
-        if (sendBtn) {
-          sendBtn.click();
-        }
-      }
-    },
-    
-    attachFiles(chatHandle, files) {
-      console.log('[AIOS Adapter] Attach files not yet implemented for Gemini');
-    },
-    
-    waitUntilFinished(chatHandle) {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve({
-            text: 'Response ready',
-            status: 'complete'
-          });
-        }, 1000);
-      });
-    },
-    
-    readResponse(chatHandle) {
-      return {
-        text: 'Gemini response',
-        status: 'complete'
-      };
-    },
-    
-    stopGeneration(chatHandle) {
-      console.log('[AIOS Adapter] Stop generation for Gemini');
-    },
-    
-    rotate(chatHandle) {
-      return this.newChat();
-    },
-    
-    healthCheck() {
-      const textarea = document.querySelector('textarea');
-      return {
-        ok: textarea !== null,
-        reason: textarea ? 'Chat interface detected' : 'Chat interface not found'
-      };
-    }
-  };
 }
 
 // Send adapter result back to Runtime
