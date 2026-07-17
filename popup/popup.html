@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 220px; padding: 12px; font-family: system-ui, sans-serif; font-size: 13px; }
+    .status { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.connected { background: #22c55e; }
+    .dot.disconnected { background: #ef4444; }
+    .dot.connecting { background: #f59e0b; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    button { width: 100%; padding: 6px; border: 1px solid #d4d4d8; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
+    button:hover { background: #f4f4f5; }
+    .info { color: #71717a; font-size: 11px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="status">
+    <div class="dot disconnected" id="dot"></div>
+    <span id="status-text">Disconnected</span>
+  </div>
+  <button id="reconnect-btn">Reconnect</button>
+  <div class="info">Runtime: ws://localhost:3333</div>
+  <script src="popup.js"></script>
+</body>
+</html>
