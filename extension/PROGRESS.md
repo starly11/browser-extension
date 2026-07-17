@@ -24,19 +24,15 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Implemented Tool Engine with registry pattern in `runtime/src/tools/index.ts` supporting dynamic tool registration and invocation
-- Created Filesystem Tool in `runtime/src/tools/filesystem.ts` with three operations: read, write, list
-- Added sandbox security to filesystem tool restricting access to FILESYSTEM_SANDBOX environment variable directory
-- Integrated tool engine into runtime message handlers for CREATE_TOOL, INVOKE_TOOL, TOOL_RESULT messages
-- Updated runtime index.ts to initialize tools registry and handle tool-related WebSocket messages
-- Fixed tsconfig.json paths for proper shared types resolution
-- Built runtime successfully (npm run build passes)
-- Committed with message: "Implement Tool Engine + Filesystem tool with sandboxing"
-- Pushed to GitHub successfully
+- Fixed content script to expose `window.aiosAdapter` for debugging in browser console
+- Added missing helper functions in content script: handleSendPrompt, handleAttachFiles, handleReadResponse, handleStopGeneration, handleRotateChat
+- Removed test code from background script that was auto-sending TOOL_REQUEST on startup
+- All fixes committed and pushed to GitHub (commits: 686afe3, 18c42b6)
+- Extension now properly loads adapters and exposes them to page context for verification
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Tool Engine implementation complete. Next step: Walking skeleton end-to-end verification.
+None - Code fixes complete. Ready for walking skeleton end-to-end verification.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
@@ -57,4 +53,4 @@ None - Tool Engine implementation complete. Next step: Walking skeleton end-to-e
 
 ## Next Concrete Step
 <!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
-Walking skeleton end-to-end verification: 1) Load extension in Chrome (chrome://extensions → Load unpacked → select extension/src), 2) Start runtime (`cd runtime && npm start`), 3) Click Connect in popup, 4) Open ChatGPT tab, 5) Send prompt requesting file read operation, 6) Verify ToolRequest flows from extension → background → runtime → tool handler → response back → ChatGPT adapter displays result. Document any issues found.
+Walking skeleton end-to-end verification: 1) Load extension in Chrome (chrome://extensions → Load unpacked → select /workspace/browser-extension/extension), 2) Start runtime (`cd /workspace/browser-extension/extension/runtime && node dist/runtime/src/index.js`), 3) Click Connect in popup, 4) Open ChatGPT tab (chatgpt.com), 5) Check browser console for "Adapter Status: Loaded" or "[AIOS Content] ChatGPT adapter loaded and exposed" message, 6) Test tool flow by sending a prompt or triggering file operation. Document any issues found in "Needs Human Decision" section.
