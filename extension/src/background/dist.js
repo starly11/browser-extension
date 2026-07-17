@@ -1,4 +1,3 @@
-"use strict";
 (() => {
   // src/background/index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
