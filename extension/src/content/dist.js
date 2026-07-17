@@ -1,3 +1,4 @@
+"use strict";
 (() => {
   // src/content/adapters/chatgpt.js
   console.log("[AIOS ChatGPT Adapter] Loading adapter");

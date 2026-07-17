@@ -38,18 +38,20 @@ wss.on('connection', (ws) => {
           const connectedTabId = message.payload?.tabId;
           console.log(`📌 Tab connected: ${connectedTabId}`);
           
-          // Now send a test prompt after 3 seconds using the REAL tabId
+          // Now send a test TOOL REQUEST after 3 seconds using the REAL tabId
           setTimeout(() => {
             if (ws.readyState === ws.OPEN) {
-              console.log(`📤 Sending automated test instruction to tab ${connectedTabId}...`);
+              console.log(`📤 Sending automated filesystem tool test to tab ${connectedTabId}...`);
+              
+              // Send a TOOL_REQUEST to read a file from the sandbox
               ws.send(JSON.stringify({
-                type: 'RELAY_TO_ADAPTER',
+                type: 'TOOL_REQUEST',
+                id: `test-${Date.now()}`,
+                taskId: null,
                 payload: {
-                  tabId: connectedTabId,
-                  instruction: {
-                    action: 'SEND_PROMPT',
-                    prompt: 'Hello from your fully automated local AIOS runtime pipeline! This is an automated test message.'
-                  }
+                  tool: 'filesystem.read',
+                  params: { filePath: 'test.txt' },
+                  authToken: `aios-token-${Date.now()}`
                 },
                 ts: new Date().toISOString()
               }));
