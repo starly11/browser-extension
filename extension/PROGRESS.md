@@ -24,15 +24,16 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Fixed content script to expose `window.aiosAdapter` for debugging in browser console
-- Added missing helper functions in content script: handleSendPrompt, handleAttachFiles, handleReadResponse, handleStopGeneration, handleRotateChat
-- Removed test code from background script that was auto-sending TOOL_REQUEST on startup
-- All fixes committed and pushed to GitHub (commits: 686afe3, 18c42b6)
-- Extension now properly loads adapters and exposes them to page context for verification
+- Verified end-to-end pipeline working: backend server → extension → ChatGPT (test prompt successfully sent)
+- Updated backend server.js to send TOOL_REQUEST instead of RELAY_TO_ADAPTER for filesystem testing
+- Created test file in runtime/sandbox/test.txt for filesystem.read tool verification
+- Rebuilt extension bundles and runtime
+- Committed and pushed all changes (commit f8e7da1)
+- Ready for full walking skeleton verification: connect tab → tool request → filesystem.read → result back to adapter
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Code fixes complete. Ready for walking skeleton end-to-end verification.
+None - Infrastructure ready for end-to-end tool flow verification.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
@@ -46,11 +47,12 @@ None - Code fixes complete. Ready for walking skeleton end-to-end verification.
 <!-- Any new architectural decision made and resolved during implementation gets logged here AND back-ported to the relevant doc's own Decision Log section. -->
 - Decided to implement ChatGPT adapter in JavaScript (.js) rather than TypeScript (.ts) to match existing content script pattern in src/content/index.js
 - Implemented filesystem tool with sandbox security by default, using FILESYSTEM_SANDBOX env var or ./sandbox fallback
+- Backend test server now sends TOOL_REQUEST to test filesystem tools end-to-end instead of just SEND_PROMPT
 
 ## Test Status
 - Unit tests passing: unknown (run them before trusting this)
-- Last full walking-skeleton verification: never
+- Last full walking-skeleton verification: Partial - SEND_PROMPT works end-to-end, TOOL_REQUEST flow ready for verification
 
 ## Next Concrete Step
 <!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
-Walking skeleton end-to-end verification: 1) Load extension in Chrome (chrome://extensions → Load unpacked → select /workspace/browser-extension/extension), 2) Start runtime (`cd /workspace/browser-extension/extension/runtime && node dist/runtime/src/index.js`), 3) Click Connect in popup, 4) Open ChatGPT tab (chatgpt.com), 5) Check browser console for "Adapter Status: Loaded" or "[AIOS Content] ChatGPT adapter loaded and exposed" message, 6) Test tool flow by sending a prompt or triggering file operation. Document any issues found in "Needs Human Decision" section.
+Complete walking skeleton end-to-end verification: 1) Start runtime (`cd extension/runtime && node dist/runtime/src/index.js`), 2) Start backend test server (`cd backend && node server.js`), 3) Load/reload extension in Chrome, 4) Open ChatGPT tab, 5) Click Connect in popup, 6) Watch for TOOL_REQUEST in runtime logs, 7) Verify filesystem.read executes and returns TOOL_RESULT, 8) Document results. If successful, mark "Walking skeleton verified end-to-end" as complete in checklist and move to Semantic attachment tool implementation.
