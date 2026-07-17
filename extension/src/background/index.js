@@ -18,11 +18,11 @@ async function connectToRuntime() {
   return new Promise((resolve, reject) => {
     try {
       wsConnection = new WebSocket(RUNTIME_WS_URL);
-      
+
       wsConnection.onopen = () => {
         console.log('[AIOS Background] Connected to Runtime');
         isConnected = true;
-        
+
         // Send AUTH_REQUEST
         const authMessage = {
           type: 'AUTH_REQUEST',
@@ -34,7 +34,7 @@ async function connectToRuntime() {
         wsConnection.send(JSON.stringify(authMessage));
         resolve();
       };
-      
+
       wsConnection.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
@@ -43,18 +43,18 @@ async function connectToRuntime() {
           console.error('[AIOS Background] Failed to parse Runtime message:', e);
         }
       };
-      
+
       wsConnection.onerror = (error) => {
         console.error('[AIOS Background] WebSocket error:', error);
         isConnected = false;
         reject(error);
       };
-      
+
       wsConnection.onclose = () => {
         console.log('[AIOS Background] Disconnected from Runtime');
         isConnected = false;
         wsConnection = null;
-        
+
         // Attempt reconnection after delay
         setTimeout(connectToRuntime, 5000);
       };
@@ -68,13 +68,17 @@ async function connectToRuntime() {
 // Handle messages received from Runtime
 function handleMessageFromRuntime(message) {
   console.log('[AIOS Background] Received from Runtime:', message);
-  
+
   // Route message based on type
   switch (message.type) {
+
     case 'AUTH_RESPONSE':
-      // Auth handled in onopen
+      console.log('[AIOS Background] Saved session token:', message.payload.token);
+      // Save the token globally to the worker instance so we can reuse it
+      self.activeAuthToken = message.payload.token;
       break;
-    
+
+
     case 'RELAY_TO_ADAPTER':
       // Forward message to content script in specific tab
       const { tabId, instruction } = message.payload;
@@ -85,7 +89,16 @@ function handleMessageFromRuntime(message) {
         console.error('[AIOS Background] Failed to send to tab:', err);
       });
       break;
-    
+
+    case 'ERROR':
+      console.error('❌ [AIOS Background] Critical Runtime Error Message:', message.payload);
+      break;
+
+    case 'TOOL_RESULT':
+      console.log('✅ [AIOS Background] Tool Execution Successful! Result:', message.payload);
+      // Here you can forward the tool result back to the web app/adapter if needed
+      break;
+
     default:
       console.warn('[AIOS Background] Unknown message type from Runtime:', message.type);
   }
@@ -98,7 +111,7 @@ function sendToRuntime(message) {
     pendingMessages.push(message);
     return false;
   }
-  
+
   try {
     wsConnection.send(JSON.stringify(message));
     return true;
@@ -116,16 +129,33 @@ function generateId() {
 // Handle messages from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log('[AIOS Background] Received from popup/content:', message);
-  
+
   switch (message.type) {
+
+    case 'TOOL_REQUEST':
+      console.log('[AIOS Background] Forwarding tool request to runtime:', message.payload);
+      const toolMsg = {
+        type: 'TOOL_REQUEST',
+        id: generateId(),
+        taskId: message.taskId || null,
+        payload: {
+          ...message.payload,
+          authToken: self.activeAuthToken // 👈 Injects the dynamic token from the handshake
+        },
+        ts: new Date().toISOString()
+      };
+      sendToRuntime(toolMsg);
+      sendResponse({ success: true, status: 'Forwarded to Runtime' });
+      break;
+
     case 'GET_STATUS':
       // Return current connection status
-      sendResponse({ 
+      sendResponse({
         isConnected: isConnected,
         runtimeUrl: RUNTIME_WS_URL
       });
       break;
-    
+
     case 'CONNECT_TAB':
       // User clicked connect on current tab
       const connectMsg = {
@@ -141,7 +171,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendToRuntime(connectMsg);
       sendResponse({ success: true });
       break;
-    
+
     case 'DISCONNECT_TAB':
       // User clicked disconnect
       const disconnectMsg = {
@@ -156,7 +186,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendToRuntime(disconnectMsg);
       sendResponse({ success: true });
       break;
-    
+
     case 'ADAPTER_RESULT':
       // Content script sending adapter result back to Runtime
       const adapterMsg = {
@@ -172,7 +202,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendToRuntime(adapterMsg);
       sendResponse({ success: true });
       break;
-    
+
     case 'SET_AGENT_MODE':
       const modeMsg = {
         type: 'SET_AGENT_MODE',
@@ -187,12 +217,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendToRuntime(modeMsg);
       sendResponse({ success: true });
       break;
-    
+
     default:
       console.warn('[AIOS Background] Unknown message type:', message.type);
       sendResponse({ error: 'Unknown message type' });
   }
-  
+
   return true; // Keep channel open for async response
 });
 
@@ -222,3 +252,19 @@ connectToRuntime().catch(err => {
 });
 
 console.log('[AIOS Background] Service worker initialized');
+
+// Temporarily expose the connection helper to the DevTools console
+self.testSend({
+  type: 'TOOL_REQUEST',
+  id: `test-write-${Date.now()}`,
+  taskId: null,
+  payload: {
+    authToken: self.activeAuthToken,
+    tool: 'filesystem.write',
+    params: {
+      filePath: 'welcome.txt',
+      content: 'Sandbox successfully initialized!'
+    }
+  },
+  ts: new Date().toISOString()
+});
