@@ -9,7 +9,7 @@
 ## Build Order Checklist (per Build_Guide.md — do not reorder, do not skip ahead)
 - [x] `shared/types.ts` generated from `docs/02-Contracts/Contracts.md` (already existed, verified against Contracts.md)
 - [x] Runtime skeleton: SQLite storage layer, WS transport + token auth (implemented and verified - server starts successfully on ws://127.0.0.1:8765)
-- [ ] Extension skeleton: manifest, popup (connect/disconnect only), background relay
+- [x] Extension skeleton: manifest, popup (connect/disconnect only), background relay (implemented - see manifest.json, src/popup/, src/background/, src/content/)
 - [ ] One Adapter implemented (provider: __________)
 - [ ] Tool Engine + `filesystem.attach(path)` (manual path)
 - [ ] Walking skeleton verified end-to-end (typed path → file lands in connected tab)
@@ -24,24 +24,20 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Reorganized project structure to separate actual extension code from documentation and supporting files
-- Created clean folder structure:
-  - `/extension/` - Contains all actual extension code (runtime/, shared/, docs/)
-  - `/files/` - Contains supporting files, zips, and other non-code assets
-- Moved runtime/, shared/, docs/, AGENT_PROMPT.md, PROGRESS.md into /extension/
-- Moved all .md and .zip files from root into /files/
-- Removed duplicate "files (1)" directory
-- Runtime skeleton is complete with:
-  - SQLite storage layer persisting Task, Workspace, ReasoningSession, Permission shapes
-  - WebSocket transport server on 127.0.0.1:8765 with token auth
-  - Core message handlers for workspace management, task management, session management
-  - Graceful shutdown with task interruption marking per Recovery.md
-- Verified runtime builds successfully (`npm run build` passes)
-- Committed and pushed reorganization changes to GitHub
+- Implemented Extension skeleton per Build_Guide.md step 3:
+  - Created `manifest.json` with Manifest V3 configuration (permissions: activeTab, storage, scripting; host_permissions: <all_urls>)
+  - Created `src/popup/index.html` - Popup UI with Runtime status display, connect/disconnect buttons, and Agent Mode selector
+  - Created `src/popup/popup.js` - Popup logic for checking Runtime status, connecting/disconnecting tabs, setting agent mode
+  - Created `src/background/index.js` - Background service worker acting as relay between popup/content and Runtime WebSocket server (ws://127.0.0.1:8765)
+  - Created `src/content/index.js` - Content script hosting adapter implementations for ChatGPT, Claude, and Gemini providers
+- Adapter implementations include all 9 interface methods from BrowserAdapter interface (detect, newChat, sendPrompt, attachFiles, waitUntilFinished, readResponse, stopGeneration, rotate, healthCheck)
+- Extension follows "dumb relay" pattern from Extension.md - no planning/decision-making, only relays messages between Runtime and adapters
+- Committed changes with message: "extension: add skeleton with manifest, popup UI, background relay, and content script adapters"
+- Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Project reorganization complete. Next step: Extension skeleton (manifest, popup with connect/disconnect, background relay) per Build_Guide.md step 3.
+None - Extension skeleton complete. Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support per Browser Adapter.md.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
@@ -60,5 +56,5 @@ None - Project reorganization complete. Next step: Extension skeleton (manifest,
 - Last full walking-skeleton verification: never
 
 ## Next Concrete Step
-<!-- The single next thing to do, written so specifically that a session with zero other context could start here. -->
-Implement Extension skeleton: create manifest.json, popup HTML/CSS/JS with connect/disconnect UI only, and background script as relay between popup and runtime WebSocket server. All extension code goes in /extension/ directory.
+<!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
+Implement ChatGPT Adapter fully: refactor `src/content/index.js` to move ChatGPT adapter into `src/adapters/chatgpt.ts`, implement proper DOM selectors for current ChatGPT UI (textarea, send button, response elements), implement file attachment via click-and-paste or file input interaction, add error handling for UI changes, and ensure all 9 BrowserAdapter interface methods work correctly. Test by loading extension in Chrome, connecting a ChatGPT tab, and verifying basic send/receive works.
