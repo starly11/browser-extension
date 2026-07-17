@@ -139,7 +139,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         id: generateId(),
         taskId: message.taskId || null,
         payload: {
-          ...message.payload,
+          tool: message.payload.tool,
+          params: message.payload.params,
+          taskId: message.taskId || null,
           authToken: self.activeAuthToken // 👈 Injects the dynamic token from the handshake
         },
         ts: new Date().toISOString()

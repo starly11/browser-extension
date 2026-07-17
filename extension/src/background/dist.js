@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // src/background/index.js
+  // index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
   var AUTH_TOKEN = "aios-local-token";
   var wsConnection = null;
@@ -104,7 +104,9 @@
           id: generateId(),
           taskId: message.taskId || null,
           payload: {
-            ...message.payload,
+            tool: message.payload.tool,
+            params: message.payload.params,
+            taskId: message.taskId || null,
             authToken: self.activeAuthToken
             // 👈 Injects the dynamic token from the handshake
           },
