@@ -7,8 +7,8 @@
 <!-- One of: PHASE_1_SKELETON | PHASE_2_SEMANTIC_ATTACH | PHASE_3_PLANNER_WORKER | PHASE_4_RECOVERY | PHASE_5_SECOND_PROVIDER -->
 
 ## Build Order Checklist (per Build_Guide.md — do not reorder, do not skip ahead)
-- [ ] `shared/types.ts` generated from `docs/02-Contracts/Contracts.md`
-- [ ] Runtime skeleton: SQLite storage layer, WS transport + token auth
+- [x] `shared/types.ts` generated from `docs/02-Contracts/Contracts.md` (already existed, verified against Contracts.md)
+- [x] Runtime skeleton: SQLite storage layer, WS transport + token auth (implemented and verified - server starts successfully on ws://127.0.0.1:8765)
 - [ ] Extension skeleton: manifest, popup (connect/disconnect only), background relay
 - [ ] One Adapter implemented (provider: __________)
 - [ ] Tool Engine + `filesystem.attach(path)` (manual path)
@@ -26,13 +26,21 @@
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
 - Cloned the repository and read all documentation (docs/, AGENT_PROMPT.md, PROGRESS.md)
 - Created initial folder structure with `shared/`, `runtime/`, and `docs/` directories
-- The `shared/types.ts` file was already present (generated from Contracts.md)
-- Runtime skeleton partially exists with basic structure in `runtime/src/`
-- Committed and pushed initial project structure to GitHub
+- Verified `shared/types.ts` against `docs/02-Contracts/Contracts.md` - types are complete and accurate
+- Fixed TypeScript build configuration in `runtime/tsconfig.json` to properly include shared types
+- Fixed type import issue in `runtime/src/storage/index.ts` (added WorkspacePermissions import, fixed permissions mapping)
+- Runtime skeleton is complete with:
+  - SQLite storage layer persisting Task, Workspace, ReasoningSession, Permission shapes
+  - WebSocket transport server on 127.0.0.1:8765 with token auth
+  - Core message handlers for workspace management, task management, session management
+  - Graceful shutdown with task interruption marking per Recovery.md
+- Verified runtime builds successfully (`npm run build` passes)
+- Verified runtime starts and listens correctly (tested with timeout)
+- Committed and pushed all changes to GitHub
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-Verifying the existing `shared/types.ts` against `docs/02-Contracts/Contracts.md` to ensure it matches the specification. Then will continue with completing the Runtime skeleton (SQLite storage layer, WS transport + token auth).
+None - Runtime skeleton (checklist item 2) is complete. Next step: Extension skeleton (manifest, popup with connect/disconnect, background relay) per Build_Guide.md step 3.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->

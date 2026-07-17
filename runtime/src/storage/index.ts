@@ -7,7 +7,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { Task, TaskStatus, Workspace, PermissionState, ReasoningSession, SessionStatus } from '@shared/types';
+import { Task, TaskStatus, Workspace, WorkspacePermissions, PermissionState, ReasoningSession, SessionStatus } from '@shared/types';
 
 export interface StorageConfig {
   dbPath?: string; // defaults to ./aios-runtime.db
@@ -140,10 +140,19 @@ export class Storage {
     const permStmt = this.db.prepare('SELECT tool, state FROM permissions WHERE workspaceId = ?');
     const perms = permStmt.all(id) as Array<{ tool: string; state: string }>;
 
-    const permissions: Record<string, PermissionState> = {};
+    const permMap: Record<string, PermissionState> = {};
     for (const p of perms) {
-      permissions[p.tool] = p.state as PermissionState;
+      permMap[p.tool] = p.state as PermissionState;
     }
+
+    const permissions: WorkspacePermissions = {
+      filesystem: permMap['filesystem'] || 'ask',
+      writeFiles: permMap['writeFiles'] || 'ask',
+      terminal: permMap['terminal'] || 'ask',
+      git: permMap['git'] || 'ask',
+      browserAutomation: permMap['browserAutomation'] || 'ask',
+      network: permMap['network'] || 'ask',
+    };
 
     return {
       id: workspace.id,
@@ -154,7 +163,7 @@ export class Storage {
         providerId: t.providerId,
         agentMode: t.agentMode as 'manual' | 'assistant' | 'autonomous'
       })),
-      permissions: permissions as Workspace['permissions'],
+      permissions: permissions,
       createdAt: workspace.createdAt,
       lastActiveAt: workspace.lastActiveAt
     };
