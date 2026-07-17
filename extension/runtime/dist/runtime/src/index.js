@@ -9,6 +9,7 @@ const storage_1 = require("./storage");
 Object.defineProperty(exports, "Storage", { enumerable: true, get: function () { return storage_1.Storage; } });
 const transport_1 = require("./transport");
 Object.defineProperty(exports, "Transport", { enumerable: true, get: function () { return transport_1.Transport; } });
+const tools_1 = require("./tools");
 async function main() {
     console.log('[Runtime] Starting AIOS Runtime...');
     // Initialize storage layer (SQLite)
@@ -23,6 +24,24 @@ async function main() {
     // Register core message handlers
     (0, transport_1.registerCoreHandlers)(transport, storage);
     console.log('[Runtime] Core handlers registered');
+    // Register TOOL_REQUEST handler for tool execution
+    transport.on('TOOL_REQUEST', async (envelope, ws) => {
+        console.log('[Runtime] Received TOOL_REQUEST:', envelope.payload);
+        const payload = envelope.payload;
+        const request = {
+            tool: String(payload.tool || ''),
+            params: payload.params || {},
+            taskId: String(payload.taskId || ''),
+        };
+        const result = await tools_1.toolEngine.execute(request);
+        transport.send(ws, {
+            type: 'TOOL_RESULT',
+            id: envelope.id,
+            taskId: request.taskId,
+            payload: result,
+        });
+    });
+    console.log('[Runtime] Tool engine initialized with tools:', tools_1.toolEngine.listTools());
     // Handle graceful shutdown
     process.on('SIGINT', async () => {
         console.log('[Runtime] Shutting down...');

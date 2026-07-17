@@ -5,6 +5,8 @@
 
 import { Storage } from './storage';
 import { Transport, registerCoreHandlers } from './transport';
+import { toolEngine } from './tools';
+import { ToolRequest } from '@shared/types';
 
 async function main(): Promise<void> {
   console.log('[Runtime] Starting AIOS Runtime...');
@@ -23,6 +25,27 @@ async function main(): Promise<void> {
   // Register core message handlers
   registerCoreHandlers(transport, storage);
   console.log('[Runtime] Core handlers registered');
+
+  // Register TOOL_REQUEST handler for tool execution
+  transport.on('TOOL_REQUEST', async (envelope, ws) => {
+    console.log('[Runtime] Received TOOL_REQUEST:', envelope.payload);
+    
+    const payload = envelope.payload as Record<string, unknown>;
+    const request: ToolRequest = {
+      tool: String(payload.tool || ''),
+      params: (payload.params as Record<string, unknown>) || {},
+      taskId: String(payload.taskId || ''),
+    };
+    const result = await toolEngine.execute(request);
+    
+    transport.send(ws, {
+      type: 'TOOL_RESULT',
+      id: envelope.id,
+      taskId: request.taskId,
+      payload: result as unknown as Record<string, unknown>,
+    });
+  });
+  console.log('[Runtime] Tool engine initialized with tools:', toolEngine.listTools());
 
   // Handle graceful shutdown
   process.on('SIGINT', async () => {

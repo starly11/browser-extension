@@ -18,6 +18,6 @@
       "@shared/*": ["shared/*"]
     }
   },
-  "include": ["src/**/*", "shared/**/*"],
+  "include": ["src/**/*", "shared/**/*", "src/tools/**/*"],
   "exclude": ["node_modules", "dist", "test"]
 }

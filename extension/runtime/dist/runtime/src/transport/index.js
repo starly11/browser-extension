@@ -28,6 +28,12 @@ class Transport {
         this.handlers.set(type, handler);
     }
     /**
+     * Public method to register handlers (alias for on)
+     */
+    registerHandler(type, handler) {
+        this.on(type, handler);
+    }
+    /**
      * Start the WebSocket server
      */
     start() {

@@ -39,6 +39,13 @@ export class Transport {
   }
 
   /**
+   * Public method to register handlers (alias for on)
+   */
+  registerHandler(type: string, handler: MessageHandler): void {
+    this.on(type, handler);
+  }
+
+  /**
    * Start the WebSocket server
    */
   start(): Promise<void> {
