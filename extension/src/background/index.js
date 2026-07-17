@@ -67,7 +67,7 @@ async function connectToRuntime() {
 
 // Handle messages received from Runtime
 function handleMessageFromRuntime(message) {
-  console.log('[AIOS Background] Received from Runtime:', message);
+  console.log('[AIOS Background] Received from Runtime:', JSON.stringify(message, null, 2));
 
   // Route message based on type
   switch (message.type) {
@@ -91,11 +91,11 @@ function handleMessageFromRuntime(message) {
       break;
 
     case 'ERROR':
-      console.error('❌ [AIOS Background] Critical Runtime Error Message:', message.payload);
+      console.error('❌ [AIOS Background] Critical Runtime Error Message:', JSON.stringify(message.payload, null, 2));
       break;
 
     case 'TOOL_RESULT':
-      console.log('✅ [AIOS Background] Tool Execution Successful! Result:', message.payload);
+      console.log('✅ [AIOS Background] Tool Execution Successful! Result:', JSON.stringify(message.payload, null, 2));
       // Here you can forward the tool result back to the web app/adapter if needed
       break;
 

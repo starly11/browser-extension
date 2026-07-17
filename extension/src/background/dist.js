@@ -1,4 +1,3 @@
-"use strict";
 (() => {
   // src/background/index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
@@ -52,7 +51,7 @@
     });
   }
   function handleMessageFromRuntime(message) {
-    console.log("[AIOS Background] Received from Runtime:", message);
+    console.log("[AIOS Background] Received from Runtime:", JSON.stringify(message, null, 2));
     switch (message.type) {
       case "AUTH_RESPONSE":
         console.log("[AIOS Background] Saved session token:", message.payload.token);
@@ -68,10 +67,10 @@
         });
         break;
       case "ERROR":
-        console.error("\u274C [AIOS Background] Critical Runtime Error Message:", message.payload);
+        console.error("\u274C [AIOS Background] Critical Runtime Error Message:", JSON.stringify(message.payload, null, 2));
         break;
       case "TOOL_RESULT":
-        console.log("\u2705 [AIOS Background] Tool Execution Successful! Result:", message.payload);
+        console.log("\u2705 [AIOS Background] Tool Execution Successful! Result:", JSON.stringify(message.payload, null, 2));
         break;
       default:
         console.warn("[AIOS Background] Unknown message type from Runtime:", message.type);

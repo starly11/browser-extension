@@ -16,7 +16,7 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const message = JSON.parse(data.toString());
-      console.log(`📩 Received from ${clientId}:`, message.type);
+      console.log(`📩 Received from ${clientId}:`, message.type, JSON.stringify(message.payload || {}, null, 2));
 
       // Handle different message types
       switch (message.type) {
@@ -36,7 +36,7 @@ wss.on('connection', (ws) => {
 
         case 'CONNECT_TAB':
           const connectedTabId = message.payload?.tabId;
-          console.log(`📌 Tab connected: ${connectedTabId}`);
+          console.log(`📌 Tab connected: ${connectedTabId} | workspace: ${message.payload?.workspaceId}, mode: ${message.payload?.agentMode}`);
           
           // Now send a test instruction after 3 seconds using the REAL tabId
           setTimeout(() => {
@@ -78,11 +78,16 @@ wss.on('connection', (ws) => {
           break;
 
         case 'ADAPTER_RESULT':
-          console.log(`📊 Adapter result from ${message.payload?.tabId}:`, message.payload?.result);
+          console.log(`📊 Adapter result from ${message.payload?.tabId}:`, JSON.stringify(message.payload?.result || {}, null, 2));
           break;
 
         case 'SET_AGENT_MODE':
           console.log(`🤖 Agent mode set for ${message.payload?.tabId}: ${message.payload?.mode}`);
+          break;
+          
+        case 'USER_ACTION':
+          console.log(`👤 User action intercepted:`, message.payload?.action, JSON.stringify(message.payload?.data || {}, null, 2));
+          // Just acknowledge - mock server doesn't process actions yet
           break;
 
         default:
