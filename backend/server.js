@@ -38,20 +38,20 @@ wss.on('connection', (ws) => {
           const connectedTabId = message.payload?.tabId;
           console.log(`📌 Tab connected: ${connectedTabId}`);
           
-          // Now send a test TOOL REQUEST after 3 seconds using the REAL tabId
+          // Now send a test instruction after 3 seconds using the REAL tabId
           setTimeout(() => {
             if (ws.readyState === ws.OPEN) {
-              console.log(`📤 Sending automated filesystem tool test to tab ${connectedTabId}...`);
+              console.log(`📤 Sending automated test instruction to tab ${connectedTabId}...`);
               
-              // Send a TOOL_REQUEST to read a file from the sandbox
+              // Send a SEND_PROMPT instruction to type text into ChatGPT
               ws.send(JSON.stringify({
-                type: 'TOOL_REQUEST',
-                id: `test-${Date.now()}`,
-                taskId: null,
+                type: 'RELAY_TO_ADAPTER',
                 payload: {
-                  tool: 'filesystem.read',
-                  params: { filePath: 'test.txt' },
-                  authToken: `aios-token-${Date.now()}`
+                  tabId: connectedTabId,
+                  instruction: {
+                    action: 'SEND_PROMPT',
+                    prompt: 'Hello from your fully automated local AIOS runtime pipeline!'
+                  }
                 },
                 ts: new Date().toISOString()
               }));

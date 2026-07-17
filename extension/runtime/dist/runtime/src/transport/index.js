@@ -393,6 +393,21 @@ function registerCoreHandlers(transport, storage) {
             payload: { timestamp: new Date().toISOString() },
         });
     });
+    // ============================================================================
+    // RELAY_TO_ADAPTER - Forward instruction to specific tab's adapter
+    // ============================================================================
+    transport.on('RELAY_TO_ADAPTER', async (envelope, ws) => {
+        const { tabId, instruction } = envelope.payload;
+        console.log(`[Transport] RELAY_TO_ADAPTER: Forwarding instruction to tab ${tabId}`);
+        // Send message to extension background to relay to content script
+        // This requires the extension to be connected and listening
+        transport.send(ws, {
+            type: 'RELAY_TO_ADAPTER',
+            id: envelope.id,
+            taskId: null,
+            payload: { tabId, instruction },
+        });
+    });
 }
 exports.default = Transport;
 //# sourceMappingURL=index.js.map
