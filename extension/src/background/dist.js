@@ -1,6 +1,6 @@
 "use strict";
 (() => {
-  // index.js
+  // src/background/index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
   var AUTH_TOKEN = "aios-local-token";
   var wsConnection = null;
@@ -160,6 +160,22 @@
           ts: (/* @__PURE__ */ new Date()).toISOString()
         };
         sendToRuntime(adapterMsg);
+        sendResponse({ success: true });
+        break;
+      case "USER_ACTION":
+        console.log("[AIOS Background] User action intercepted:", message.payload);
+        const userActionMsg = {
+          type: "USER_ACTION",
+          id: generateId(),
+          taskId: null,
+          payload: {
+            tabId: message.tabId || message.payload.tabId,
+            action: message.payload.action,
+            data: message.payload
+          },
+          ts: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        sendToRuntime(userActionMsg);
         sendResponse({ success: true });
         break;
       case "SET_AGENT_MODE":

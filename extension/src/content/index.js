@@ -173,3 +173,69 @@ window.__debug_detectProvider = detectProvider;
 window.__debug_loadAdapter = loadAdapter;
 window.__debug_createChatGPTAdapter = createChatGPTAdapter;
 // -----------------------------------------------------------------
+
+// Production: Intercept user actions and route through Runtime
+async function initializeProductionMode() {
+  const providerId = detectProvider(window.location.href);
+  if (!providerId) return;
+
+  const adapter = await loadAdapter(providerId);
+  if (!adapter) return;
+
+  console.log('[AIOS Content] Production mode initialized for:', providerId);
+
+  // Intercept ChatGPT send button clicks
+  if (providerId === 'chatgpt') {
+    interceptChatGPTSends(adapter);
+  }
+}
+
+// Intercept ChatGPT message sends
+function interceptChatGPTSends(adapter) {
+  // Monitor for send button clicks and form submissions
+  const observeSendButton = () => {
+    const sendButton = document.querySelector('button[data-testid="send-button"]');
+    if (sendButton) {
+      sendButton.addEventListener('click', async (e) => {
+        console.log('[AIOS Content] Intercepted ChatGPT send');
+        
+        // Get the prompt from the textarea
+        const textarea = document.querySelector('textarea[aria-label*="Message"]');
+        if (textarea && textarea.value.trim()) {
+          const prompt = textarea.value;
+          
+          // Send to Runtime for processing before letting ChatGPT handle it
+          await sendUserActionToRuntime({
+            action: 'USER_SEND_PROMPT',
+            prompt: prompt,
+            providerId: 'chatgpt'
+          });
+        }
+      });
+    }
+  };
+
+  // Observe DOM for send button (it may be dynamically loaded)
+  const observer = new MutationObserver(() => {
+    observeSendButton();
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+  observeSendButton(); // Initial check
+}
+
+// Send user action to Runtime via background
+async function sendUserActionToRuntime(actionData) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({
+      type: 'USER_ACTION',
+      payload: actionData,
+      tabId: String(chrome.runtime.id)
+    }, (response) => {
+      resolve(response);
+    });
+  });
+}
+
+// Start production mode
+initializeProductionMode();

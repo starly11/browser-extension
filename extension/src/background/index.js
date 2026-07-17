@@ -205,6 +205,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
+    case 'USER_ACTION':
+      // User action intercepted from content script (e.g., sending a prompt)
+      console.log('[AIOS Background] User action intercepted:', message.payload);
+      // Forward to Runtime for processing/interception
+      const userActionMsg = {
+        type: 'USER_ACTION',
+        id: generateId(),
+        taskId: null,
+        payload: {
+          tabId: message.tabId || message.payload.tabId,
+          action: message.payload.action,
+          data: message.payload
+        },
+        ts: new Date().toISOString()
+      };
+      sendToRuntime(userActionMsg);
+      sendResponse({ success: true });
+      break;
+
     case 'SET_AGENT_MODE':
       const modeMsg = {
         type: 'SET_AGENT_MODE',

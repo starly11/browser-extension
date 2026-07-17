@@ -567,4 +567,50 @@
   window.__debug_detectProvider = detectProvider;
   window.__debug_loadAdapter = loadAdapter;
   window.__debug_createChatGPTAdapter = createChatGPTAdapter;
+  async function initializeProductionMode() {
+    const providerId = detectProvider(window.location.href);
+    if (!providerId) return;
+    const adapter = await loadAdapter(providerId);
+    if (!adapter) return;
+    console.log("[AIOS Content] Production mode initialized for:", providerId);
+    if (providerId === "chatgpt") {
+      interceptChatGPTSends(adapter);
+    }
+  }
+  function interceptChatGPTSends(adapter) {
+    const observeSendButton = () => {
+      const sendButton = document.querySelector('button[data-testid="send-button"]');
+      if (sendButton) {
+        sendButton.addEventListener("click", async (e) => {
+          console.log("[AIOS Content] Intercepted ChatGPT send");
+          const textarea = document.querySelector('textarea[aria-label*="Message"]');
+          if (textarea && textarea.value.trim()) {
+            const prompt = textarea.value;
+            await sendUserActionToRuntime({
+              action: "USER_SEND_PROMPT",
+              prompt,
+              providerId: "chatgpt"
+            });
+          }
+        });
+      }
+    };
+    const observer = new MutationObserver(() => {
+      observeSendButton();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    observeSendButton();
+  }
+  async function sendUserActionToRuntime(actionData) {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        type: "USER_ACTION",
+        payload: actionData,
+        tabId: String(chrome.runtime.id)
+      }, (response) => {
+        resolve(response);
+      });
+    });
+  }
+  initializeProductionMode();
 })();
