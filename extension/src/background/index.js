@@ -252,19 +252,3 @@ connectToRuntime().catch(err => {
 });
 
 console.log('[AIOS Background] Service worker initialized');
-
-// Temporarily expose the connection helper to the DevTools console
-self.testSend({
-  type: 'TOOL_REQUEST',
-  id: `test-write-${Date.now()}`,
-  taskId: null,
-  payload: {
-    authToken: self.activeAuthToken,
-    tool: 'filesystem.write',
-    params: {
-      filePath: 'welcome.txt',
-      content: 'Sandbox successfully initialized!'
-    }
-  },
-  ts: new Date().toISOString()
-});
