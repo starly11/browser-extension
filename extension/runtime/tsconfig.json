@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "commonjs",
-    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "./dist",
     "rootDir": "..",
     "strict": true,
@@ -15,9 +18,19 @@
     "resolveJsonModule": true,
     "baseUrl": "..",
     "paths": {
-      "@shared/*": ["shared/*"]
+      "@shared/*": [
+        "shared/*"
+      ]
     }
   },
-  "include": ["src/**/*", "shared/**/*", "src/tools/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "include": [
+    "src/**/*",
+    "shared/**/*",
+    "src/tools/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test"
+  ]
 }

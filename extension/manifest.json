@@ -29,10 +29,10 @@
     "48": "icons/icon48.svg",
     "128": "icons/icon128.svg"
   },
-  "content_scripts": [
+ "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/index.js"],
+      "js": ["src/content/dist.js"],
       "run_at": "document_end"
     }
   ]
