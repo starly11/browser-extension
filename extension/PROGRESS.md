@@ -9,7 +9,7 @@
 ## Build Order Checklist (per Build_Guide.md — do not reorder, do not skip ahead)
 - [x] `shared/types.ts` generated from `docs/02-Contracts/Contracts.md` (already existed, verified against Contracts.md)
 - [x] Runtime skeleton: SQLite storage layer, WS transport + token auth (implemented and verified - server starts successfully on ws://127.0.0.1:8765)
-- [x] Extension skeleton: manifest, popup (connect/disconnect only), background relay (implemented - see manifest.json, src/popup/, src/background/, src/content/)
+- [x] Extension skeleton: manifest, popup (connect/disconnect only), background relay (implemented and pushed - includes manifest.json, src/popup/, src/background/, src/content/ with basic adapter implementations for ChatGPT, Claude, Gemini)
 - [ ] One Adapter implemented (provider: __________)
 - [ ] Tool Engine + `filesystem.attach(path)` (manual path)
 - [ ] Walking skeleton verified end-to-end (typed path → file lands in connected tab)
@@ -24,20 +24,22 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
+- Reorganized project structure: moved all extension code to `/extension/` folder, supporting files to `/files/` folder for cleaner organization
 - Implemented Extension skeleton per Build_Guide.md step 3:
-  - Created `manifest.json` with Manifest V3 configuration (permissions: activeTab, storage, scripting; host_permissions: <all_urls>)
-  - Created `src/popup/index.html` - Popup UI with Runtime status display, connect/disconnect buttons, and Agent Mode selector
-  - Created `src/popup/popup.js` - Popup logic for checking Runtime status, connecting/disconnecting tabs, setting agent mode
-  - Created `src/background/index.js` - Background service worker acting as relay between popup/content and Runtime WebSocket server (ws://127.0.0.1:8765)
-  - Created `src/content/index.js` - Content script hosting adapter implementations for ChatGPT, Claude, and Gemini providers
+  - Updated `manifest.json` with Manifest V3 configuration (permissions: activeTab, storage, scripting; host_permissions: <all_urls>; icons configured)
+  - Created SVG icons (16x16, 48x48, 128x128) for the extension
+  - Verified `src/popup/index.html` - Popup UI with Runtime status display, connect/disconnect buttons, and Agent Mode selector
+  - Verified `src/popup/popup.js` - Popup logic for checking Runtime status, connecting/disconnecting tabs, setting agent mode
+  - Verified `src/background/index.js` - Background service worker acting as relay between popup/content and Runtime WebSocket server (ws://127.0.0.1:8765)
+  - Verified `src/content/index.js` - Content script hosting adapter implementations for ChatGPT, Claude, and Gemini providers
 - Adapter implementations include all 9 interface methods from BrowserAdapter interface (detect, newChat, sendPrompt, attachFiles, waitUntilFinished, readResponse, stopGeneration, rotate, healthCheck)
 - Extension follows "dumb relay" pattern from Extension.md - no planning/decision-making, only relays messages between Runtime and adapters
-- Committed changes with message: "extension: add skeleton with manifest, popup UI, background relay, and content script adapters"
+- Committed and pushed changes with message: "Add extension skeleton: manifest, popup UI, background relay, content script with adapters"
 - Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Extension skeleton complete. Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support per Browser Adapter.md.
+None - Extension skeleton complete and pushed. Next step: Implement one full Adapter (ChatGPT recommended) with proper DOM selectors and file attachment support per Browser Adapter.md.
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
