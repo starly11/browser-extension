@@ -6,6 +6,7 @@ const RUNTIME_WS_URL = 'ws://127.0.0.1:8765';
 let wsConnection = null;
 let isConnected = false;
 let isAuthComplete = false;  // Track if auth handshake is complete
+let activeAuthToken = null;  // Store the auth token from Runtime
 let messageHandlers = new Map();
 let pendingMessages = [];
 
@@ -58,6 +59,7 @@ async function connectToRuntime() {
         console.log('[AIOS Background] Disconnected from Runtime');
         isConnected = false;
         isAuthComplete = false;
+        activeAuthToken = null;
         wsConnection = null;
 
         // Attempt reconnection after delay
@@ -80,9 +82,12 @@ function handleMessageFromRuntime(message) {
     case 'AUTH_RESPONSE':
       console.log('[AIOS Background] Received auth token from Runtime:', message.payload.token);
       // Save the token globally to the worker instance so we can reuse it for subsequent requests
-      self.activeAuthToken = message.payload.token;
+      activeAuthToken = message.payload.token;
       isAuthComplete = true;  // Mark auth as complete
       console.log('[AIOS Background] Auth handshake complete, ready to send messages');
+      
+      // Flush any pending messages that were queued during auth
+      flushPendingMessages();
       break;
 
 
@@ -127,8 +132,21 @@ function handleMessageFromRuntime(message) {
   }
 }
 
+// Flush pending messages after auth is complete
+function flushPendingMessages() {
+  if (pendingMessages.length === 0) return;
+  
+  console.log(`[AIOS Background] Flushing ${pendingMessages.length} pending messages`);
+  const messagesToSend = [...pendingMessages];
+  pendingMessages = [];
+  
+  for (const msg of messagesToSend) {
+    sendToRuntime(msg, true);  // true = force send (auth is complete)
+  }
+}
+
 // Send message to Runtime
-function sendToRuntime(message) {
+function sendToRuntime(message, forceSend = false) {
   if (!isConnected || !wsConnection) {
     console.warn('[AIOS Background] Not connected to Runtime, queuing message');
     pendingMessages.push(message);
@@ -136,10 +154,15 @@ function sendToRuntime(message) {
   }
 
   // Check if auth is complete (except for AUTH_REQUEST itself)
-  if (!isAuthComplete && message.type !== 'AUTH_REQUEST') {
+  if (!isAuthComplete && message.type !== 'AUTH_REQUEST' && !forceSend) {
     console.warn('[AIOS Background] Auth not complete yet, queuing message');
     pendingMessages.push(message);
     return false;
+  }
+
+  // Add authToken to payload if we have one and message needs it
+  if (activeAuthToken && message.payload && message.type !== 'AUTH_REQUEST') {
+    message.payload.authToken = activeAuthToken;
   }
 
   try {
@@ -171,8 +194,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         payload: {
           tool: message.payload.tool,
           params: message.payload.params,
-          taskId: message.taskId || null,
-          authToken: self.activeAuthToken // 👈 Injects the dynamic token from the handshake
+          taskId: message.taskId || null
+          // authToken will be added by sendToRuntime if available
         },
         ts: new Date().toISOString()
       };

@@ -4,6 +4,7 @@
   var wsConnection = null;
   var isConnected = false;
   var isAuthComplete = false;
+  var activeAuthToken = null;
   var pendingMessages = [];
   async function connectToRuntime() {
     if (wsConnection) {
@@ -46,6 +47,7 @@
           console.log("[AIOS Background] Disconnected from Runtime");
           isConnected = false;
           isAuthComplete = false;
+          activeAuthToken = null;
           wsConnection = null;
           setTimeout(connectToRuntime, 5e3);
         };
@@ -60,9 +62,10 @@
     switch (message.type) {
       case "AUTH_RESPONSE":
         console.log("[AIOS Background] Received auth token from Runtime:", message.payload.token);
-        self.activeAuthToken = message.payload.token;
+        activeAuthToken = message.payload.token;
         isAuthComplete = true;
         console.log("[AIOS Background] Auth handshake complete, ready to send messages");
+        flushPendingMessages();
         break;
       case "RELAY_TO_ADAPTER":
         const { tabId, instruction } = message.payload;
@@ -97,16 +100,28 @@
         console.warn("[AIOS Background] Unknown message type from Runtime:", message.type);
     }
   }
-  function sendToRuntime(message) {
+  function flushPendingMessages() {
+    if (pendingMessages.length === 0) return;
+    console.log(`[AIOS Background] Flushing ${pendingMessages.length} pending messages`);
+    const messagesToSend = [...pendingMessages];
+    pendingMessages = [];
+    for (const msg of messagesToSend) {
+      sendToRuntime(msg, true);
+    }
+  }
+  function sendToRuntime(message, forceSend = false) {
     if (!isConnected || !wsConnection) {
       console.warn("[AIOS Background] Not connected to Runtime, queuing message");
       pendingMessages.push(message);
       return false;
     }
-    if (!isAuthComplete && message.type !== "AUTH_REQUEST") {
+    if (!isAuthComplete && message.type !== "AUTH_REQUEST" && !forceSend) {
       console.warn("[AIOS Background] Auth not complete yet, queuing message");
       pendingMessages.push(message);
       return false;
+    }
+    if (activeAuthToken && message.payload && message.type !== "AUTH_REQUEST") {
+      message.payload.authToken = activeAuthToken;
     }
     try {
       wsConnection.send(JSON.stringify(message));
@@ -131,9 +146,8 @@
           payload: {
             tool: message.payload.tool,
             params: message.payload.params,
-            taskId: message.taskId || null,
-            authToken: self.activeAuthToken
-            // 👈 Injects the dynamic token from the handshake
+            taskId: message.taskId || null
+            // authToken will be added by sendToRuntime if available
           },
           ts: (/* @__PURE__ */ new Date()).toISOString()
         };
