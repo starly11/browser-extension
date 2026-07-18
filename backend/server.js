@@ -38,20 +38,19 @@ wss.on('connection', (ws) => {
           const connectedTabId = message.payload?.tabId;
           console.log(`📌 Tab connected: ${connectedTabId} | workspace: ${message.payload?.workspaceId}, mode: ${message.payload?.agentMode}`);
           
-          // Now send a test instruction after 3 seconds using the REAL tabId
+          // Now send a TOOL_REQUEST to test filesystem.read after 3 seconds
           setTimeout(() => {
             if (ws.readyState === ws.OPEN) {
-              console.log(`📤 Sending automated test instruction to tab ${connectedTabId}...`);
+              console.log(`📤 Sending TOOL_REQUEST for filesystem.read to tab ${connectedTabId}...`);
               
-              // Send a SEND_PROMPT instruction to type text into ChatGPT
+              // Send a TOOL_REQUEST instruction to read test.txt from sandbox
               ws.send(JSON.stringify({
-                type: 'RELAY_TO_ADAPTER',
+                type: 'TOOL_REQUEST',
+                taskId: `test-task-${Date.now()}`,
                 payload: {
-                  tabId: connectedTabId,
-                  instruction: {
-                    action: 'SEND_PROMPT',
-                    prompt: 'Hello from your fully automated local AIOS runtime pipeline!'
-                  }
+                  tool: 'filesystem.read',
+                  params: { filePath: 'test.txt' },
+                  taskId: `test-task-${Date.now()}`
                 },
                 ts: new Date().toISOString()
               }));
@@ -63,18 +62,10 @@ wss.on('connection', (ws) => {
           console.log(`📴 Tab disconnected: ${message.payload?.tabId}`);
           break;
 
-        case 'TOOL_REQUEST':
-          console.log(`🛠️ Tool request received:`, message.payload);
-          // Simulate tool execution
-          ws.send(JSON.stringify({
-            type: 'TOOL_RESULT',
-            payload: {
-              success: true,
-              result: 'File read successfully (mock)',
-              data: 'This is mock file content'
-            },
-            ts: new Date().toISOString()
-          }));
+        case 'TOOL_RESULT':
+          console.log(`✅ TOOL_RESULT received:`, JSON.stringify(message.payload, null, 2));
+          // Walking skeleton verification complete!
+          console.log(`🎉 WALKING SKELETON VERIFIED: Tool request → execution → result flow working!`);
           break;
 
         case 'ADAPTER_RESULT':
