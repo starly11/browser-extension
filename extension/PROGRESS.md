@@ -24,27 +24,25 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- **Critical auth handshake bug fixed:** Extension was sending CONNECT_TAB and other messages before receiving AUTH_RESPONSE from Runtime, causing "Unauthorized: invalid or missing auth token" errors
-- **Root cause:** The `connectToRuntime()` function resolved immediately after sending AUTH_REQUEST, without waiting for AUTH_RESPONSE
-- **Fix implemented:**
-  - Added `isAuthComplete` flag to track authentication handshake state
-  - Modified `connectToRuntime()` to NOT resolve until AUTH_RESPONSE received (removed premature `resolve()`)
-  - Updated `sendToRuntime()` to queue messages if auth not complete (except AUTH_REQUEST itself)
-  - Set `isAuthComplete = true` only when AUTH_RESPONSE with token is received
-  - Removed hardcoded `AUTH_TOKEN` constant (no longer needed)
-- **Rebuilt extension bundles** (background/content dist.js) with fix
-- **Committed and pushed** (commit 4001194): "fix: Add auth handshake tracking to prevent premature message sending"
-- Auth flow now correctly: CONNECT → AUTH_REQUEST → wait for AUTH_RESPONSE → store token → allow subsequent messages
+- **Runtime rebuild required:** better-sqlite3 native module needed recompilation for current Node.js version (NODE_MODULE_VERSION mismatch)
+- **Fixed with:** `npm rebuild better-sqlite3` in extension/runtime directory
+- **Added ADAPTER_RESULT handler to Runtime transport:** The transport layer was missing the handler for ADAPTER_RESULT messages from the extension, which are sent when adapters complete their work
+- **Implementation details:**
+  - Added new handler in `extension/runtime/src/transport/index.ts` for message type 'ADAPTER_RESULT'
+  - Handler logs received results and sends back ADAPTER_RESULT_ACK acknowledgment
+  - This completes the bidirectional communication: Runtime → RELAY_TO_ADAPTER → Extension → Adapter executes → ADAPTER_RESULT → Runtime
+- **Rebuilt both runtime and extension bundles** after changes
+- **Committed and pushed** (commit ed0a952): "fix: Add ADAPTER_RESULT handler to Runtime transport for receiving adapter execution results"
+- **Runtime now running successfully** on ws://127.0.0.1:8765 with fresh database
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-Walking skeleton end-to-end verification READY - extension now properly handles TOOL_REQUEST → TOOL_RESULT flow:
-1. Load extension in Chrome (chrome://extensions → Load unpacked → select extension/)
-2. Start runtime: `cd extension/runtime && node dist/runtime/src/index.js`
-3. Start backend: `cd backend && node server.js`
-4. Open ChatGPT tab, click Connect in popup
-5. Verify: TOOL_REQUEST → filesystem.read → TOOL_RESULT in console logs
-6. Backend should log "🎉 WALKING SKELETON VERIFIED" on successful flow
+Walking skeleton verification IN PROGRESS - Runtime is up and ready:
+- ✅ Runtime compiled and running (better-sqlite3 rebuilt successfully)
+- ✅ ADAPTER_RESULT handler added to complete message flow
+- ✅ Fresh database created (aios-runtime.db cleared)
+- ⏳ Backend server needs to be started (port conflict resolved by killing old processes)
+- ⏳ Manual Chrome testing required to verify full flow
 
 ## Needs Human Decision
 <!-- Anything ambiguous in the docs that you did NOT guess on. -->
@@ -60,11 +58,12 @@ Walking skeleton end-to-end verification READY - extension now properly handles 
 - Implemented filesystem tool with sandbox security by default, using FILESYSTEM_SANDBOX env var or ./sandbox fallback
 - Backend test server now sends TOOL_REQUEST to test filesystem tools end-to-end instead of just SEND_PROMPT
 - Extension content script simulates filesystem.read response for walking skeleton test (production will have Runtime execute tools directly)
+- Added ADAPTER_RESULT_ACK response pattern for acknowledging adapter results (lightweight acknowledgment without complex processing in v1)
 
 ## Test Status
 - Unit tests passing: unknown (run them before trusting this)
-- Last full walking-skeleton verification: READY FOR MANUAL TEST - TOOL_REQUEST flow implemented in extension, requires Chrome testing
+- Last full walking-skeleton verification: RUNTIME READY - requires backend start + Chrome extension loading for full verification
 
 ## Next Concrete Step
 <!-- The single next thing to do, written so specifically that a next session with zero other context could start here. -->
-MANUAL TESTING REQUIRED for walking skeleton verification: 1) Start runtime (`cd extension/runtime && node dist/runtime/src/index.js`), 2) Start backend test server (`cd backend && node server.js`), 3) Load/reload extension in Chrome, 4) Open ChatGPT tab, 5) Click Connect in popup, 6) Watch for TOOL_REQUEST in runtime/backend logs, 7) Verify filesystem.read executes and returns TOOL_RESULT, 8) Backend should log "🎉 WALKING SKELETON VERIFIED". If successful, mark "Walking skeleton verified end-to-end" as complete in checklist and move to Semantic attachment tool implementation.
+COMPLETE WALKING SKELETON TEST: 1) Verify runtime is running (it should be on port 8765), 2) Start backend test server (`cd backend && node server.js`), 3) Load extension in Chrome (chrome://extensions → Load unpacked → select extension/), 4) Open ChatGPT tab, 5) Click Connect in popup, 6) Watch logs for: AUTH_REQUEST → AUTH_RESPONSE → CONNECT_TAB → TAB_CONNECTED → TOOL_REQUEST → filesystem.read → TOOL_RESULT flow, 7) Backend should log "🎉 WALKING SKELETON VERIFIED". If successful, mark checklist item complete and move to Semantic attachment tool. If issues arise, debug message flow between Runtime ↔ Extension ↔ Content Script.
