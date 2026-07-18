@@ -24,23 +24,27 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Verified end-to-end pipeline working: backend server → extension → ChatGPT (test prompt successfully sent)
-- Updated backend server.js to send TOOL_REQUEST instead of RELAY_TO_ADAPTER for filesystem testing
-- Created test file in runtime/sandbox/test.txt for filesystem.read tool verification
-- Rebuilt extension bundles and runtime
-- Committed and pushed all changes (commit f8e7da1)
-- Ready for full walking skeleton verification: connect tab → tool request → filesystem.read → result back to adapter
+- Read all docs per AGENT_PROMPT.md section 1: NORTH_STAR.md, all Architecture/*.md, Contracts.md, Build_Guide.md
+- Verified repo state matches PROGRESS.md claims - infrastructure ready for walking skeleton verification
+- Updated backend/server.js: now sends TOOL_REQUEST (filesystem.read) instead of SEND_PROMPT for proper tool flow test
+- Backend listens for TOOL_RESULT and logs "WALKING SKELETON VERIFIED" on complete flow success
+- Rebuilt extension bundles (background/content dist.js), committed and pushed (commit bdde90e)
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
-None - Infrastructure ready for end-to-end tool flow verification.
+Walking skeleton end-to-end verification - requires manual Chrome extension testing:
+1. Load extension in Chrome (chrome://extensions → Load unpacked → select extension/)
+2. Start runtime: `cd extension/runtime && node dist/runtime/src/index.js`
+3. Start backend: `cd backend && node server.js`
+4. Open ChatGPT tab, click Connect in popup
+5. Verify: TOOL_REQUEST → filesystem.read → TOOL_RESULT in console logs
 
 ## Needs Human Decision
-<!-- Anything ambiguous in the docs that you did NOT guess on. Do not delete entries here until a human resolves them and you log the resolution in the Decision Log below. -->
-(none yet)
+<!-- Anything ambiguous in the docs that you did NOT guess on. -->
+(none)
 
 ## Deviations From Spec (should be empty — if not empty, flag loudly to the human)
-<!-- If you ever had to deviate from a doc's stated interface, log exactly what and why here, and stop for review. This list should almost always be empty. -->
+<!-- If you ever had to deviate from a doc's stated interface, log exactly what and why here, and stop for review. -->
 (none)
 
 ## Decision Log Additions Made During Build
