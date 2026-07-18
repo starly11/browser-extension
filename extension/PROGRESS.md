@@ -24,16 +24,17 @@
 
 ## Last Session Summary
 <!-- Overwritten each session. What did you do, what did you verify, what's left mid-flight. -->
-- Read all docs per AGENT_PROMPT.md section 1: NORTH_STAR.md, all Architecture/*.md, Contracts.md, Build_Guide.md
-- Verified repo state matches PROGRESS.md claims - infrastructure ready for walking skeleton verification
-- Updated backend/server.js: now sends TOOL_REQUEST (filesystem.read) instead of SEND_PROMPT for proper tool flow test
-- Backend listens for TOOL_RESULT and logs "WALKING SKELETON VERIFIED" on complete flow success
-- **Updated extension code per Extension.md relay responsibilities:**
-  - background/index.js: Added TOOL_REQUEST forwarding from Runtime to content script
-  - content/index.js: Added handleToolRequest() to process filesystem tool requests
-  - content/index.js: Added sendToolResultToRuntime() for sending TOOL_RESULT back to Runtime
-  - Implements Extension.md requirement: "passes Runtime instructions into Adapter, and Adapter results back to Runtime"
-- Rebuilt extension bundles (background/content dist.js), committed and pushed (commit fe96fd2)
+- **Critical auth handshake bug fixed:** Extension was sending CONNECT_TAB and other messages before receiving AUTH_RESPONSE from Runtime, causing "Unauthorized: invalid or missing auth token" errors
+- **Root cause:** The `connectToRuntime()` function resolved immediately after sending AUTH_REQUEST, without waiting for AUTH_RESPONSE
+- **Fix implemented:**
+  - Added `isAuthComplete` flag to track authentication handshake state
+  - Modified `connectToRuntime()` to NOT resolve until AUTH_RESPONSE received (removed premature `resolve()`)
+  - Updated `sendToRuntime()` to queue messages if auth not complete (except AUTH_REQUEST itself)
+  - Set `isAuthComplete = true` only when AUTH_RESPONSE with token is received
+  - Removed hardcoded `AUTH_TOKEN` constant (no longer needed)
+- **Rebuilt extension bundles** (background/content dist.js) with fix
+- **Committed and pushed** (commit 4001194): "fix: Add auth handshake tracking to prevent premature message sending"
+- Auth flow now correctly: CONNECT → AUTH_REQUEST → wait for AUTH_RESPONSE → store token → allow subsequent messages
 
 ## Currently In Progress (if mid-task when session ended)
 <!-- Exact file/function you were in the middle of, and what the next concrete step is. -->
