@@ -408,6 +408,21 @@ function registerCoreHandlers(transport, storage) {
             payload: { tabId, instruction },
         });
     });
+    // ============================================================================
+    // ADAPTER_RESULT - Receive results from adapter execution
+    // ============================================================================
+    transport.on('ADAPTER_RESULT', async (envelope, ws) => {
+        const { tabId, result } = envelope.payload;
+        console.log(`[Transport] ADAPTER_RESULT: Received result from tab ${tabId}:`, result);
+        // Store or process the adapter result as needed
+        // For now, just acknowledge receipt
+        transport.send(ws, {
+            type: 'ADAPTER_RESULT_ACK',
+            id: envelope.id,
+            taskId: null,
+            payload: { tabId, acknowledged: true },
+        });
+    });
 }
 exports.default = Transport;
 //# sourceMappingURL=index.js.map
