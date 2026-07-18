@@ -90,6 +90,22 @@ function handleMessageFromRuntime(message) {
       });
       break;
 
+    case 'TOOL_REQUEST':
+      // Forward tool request to content script for adapter execution
+      const toolTabId = message.payload?.tabId || message.payload?.connectedTabId;
+      if (toolTabId) {
+        chrome.tabs.sendMessage(toolTabId, {
+          type: 'TOOL_REQUEST',
+          taskId: message.taskId,
+          payload: message.payload
+        }).catch(err => {
+          console.error('[AIOS Background] Failed to send TOOL_REQUEST to tab:', err);
+        });
+      } else {
+        console.warn('[AIOS Background] TOOL_REQUEST received without tabId');
+      }
+      break;
+
     case 'ERROR':
       console.error('❌ [AIOS Background] Critical Runtime Error Message:', JSON.stringify(message.payload, null, 2));
       break;

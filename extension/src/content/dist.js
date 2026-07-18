@@ -454,6 +454,10 @@
         handleAdapterInstruction(message.instruction);
         sendResponse({ success: true });
         break;
+      case "TOOL_REQUEST":
+        handleToolRequest(message.taskId, message.payload);
+        sendResponse({ success: true });
+        break;
       default:
         console.warn("[AIOS Content] Unknown message type:", message.type);
         sendResponse({ error: "Unknown message type" });
@@ -562,6 +566,46 @@
       tabId: String(chrome.runtime.id),
       result
     });
+  }
+  function sendToolResultToRuntime(taskId, result) {
+    chrome.runtime.sendMessage({
+      type: "TOOL_RESULT",
+      taskId,
+      tabId: String(chrome.runtime.id),
+      payload: result
+    });
+  }
+  async function handleToolRequest(taskId, payload) {
+    console.log("[AIOS Content] Handling TOOL_REQUEST:", payload);
+    const { tool, params } = payload;
+    if (tool && tool.startsWith("filesystem.")) {
+      console.log("[AIOS Content] Filesystem tool requested - this should be handled by Runtime directly");
+      if (tool === "filesystem.read") {
+        const filePath = params?.filePath || "unknown";
+        console.log(`[AIOS Content] Simulating filesystem.read for: ${filePath}`);
+        sendToolResultToRuntime(taskId, {
+          status: "success",
+          data: {
+            path: filePath,
+            content: `Simulated content of ${filePath} - Walking Skeleton Test`,
+            timestamp: (/* @__PURE__ */ new Date()).toISOString()
+          },
+          error: null
+        });
+      } else {
+        sendToolResultToRuntime(taskId, {
+          status: "error",
+          data: null,
+          error: `Content script cannot execute ${tool} - requires Runtime execution`
+        });
+      }
+    } else {
+      sendToolResultToRuntime(taskId, {
+        status: "error",
+        data: null,
+        error: `Unknown tool: ${tool}`
+      });
+    }
   }
   console.log("[AIOS Content] Content script initialized");
   window.__debug_detectProvider = detectProvider;
