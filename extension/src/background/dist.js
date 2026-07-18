@@ -1,9 +1,9 @@
-"use strict";
 (() => {
   // src/background/index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
   var wsConnection = null;
   var isConnected = false;
+  var isAuthComplete = false;
   var pendingMessages = [];
   async function connectToRuntime() {
     if (wsConnection) {
@@ -15,6 +15,7 @@
         wsConnection.onopen = () => {
           console.log("[AIOS Background] Connected to Runtime");
           isConnected = true;
+          isAuthComplete = false;
           const authMessage = {
             type: "AUTH_REQUEST",
             id: generateId(),
@@ -26,7 +27,6 @@
             ts: (/* @__PURE__ */ new Date()).toISOString()
           };
           wsConnection.send(JSON.stringify(authMessage));
-          resolve();
         };
         wsConnection.onmessage = (event) => {
           try {
@@ -39,11 +39,13 @@
         wsConnection.onerror = (error) => {
           console.error("[AIOS Background] WebSocket error:", error);
           isConnected = false;
+          isAuthComplete = false;
           reject(error);
         };
         wsConnection.onclose = () => {
           console.log("[AIOS Background] Disconnected from Runtime");
           isConnected = false;
+          isAuthComplete = false;
           wsConnection = null;
           setTimeout(connectToRuntime, 5e3);
         };
@@ -59,6 +61,8 @@
       case "AUTH_RESPONSE":
         console.log("[AIOS Background] Received auth token from Runtime:", message.payload.token);
         self.activeAuthToken = message.payload.token;
+        isAuthComplete = true;
+        console.log("[AIOS Background] Auth handshake complete, ready to send messages");
         break;
       case "RELAY_TO_ADAPTER":
         const { tabId, instruction } = message.payload;
@@ -96,6 +100,11 @@
   function sendToRuntime(message) {
     if (!isConnected || !wsConnection) {
       console.warn("[AIOS Background] Not connected to Runtime, queuing message");
+      pendingMessages.push(message);
+      return false;
+    }
+    if (!isAuthComplete && message.type !== "AUTH_REQUEST") {
+      console.warn("[AIOS Background] Auth not complete yet, queuing message");
       pendingMessages.push(message);
       return false;
     }

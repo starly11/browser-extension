@@ -2,10 +2,10 @@
 // Background service worker - acts as a relay between popup/content scripts and the Runtime
 
 const RUNTIME_WS_URL = 'ws://127.0.0.1:8765';
-const AUTH_TOKEN = 'aios-local-token'; // TODO: load from secure storage
 
 let wsConnection = null;
 let isConnected = false;
+let isAuthComplete = false;  // Track if auth handshake is complete
 let messageHandlers = new Map();
 let pendingMessages = [];
 
@@ -22,6 +22,7 @@ async function connectToRuntime() {
       wsConnection.onopen = () => {
         console.log('[AIOS Background] Connected to Runtime');
         isConnected = true;
+        isAuthComplete = false;  // Reset auth state on new connection
 
         // Send AUTH_REQUEST with workspaceId (Runtime expects this)
         const authMessage = {
@@ -34,7 +35,7 @@ async function connectToRuntime() {
           ts: new Date().toISOString()
         };
         wsConnection.send(JSON.stringify(authMessage));
-        resolve();
+        // Don't resolve yet - wait for AUTH_RESPONSE
       };
 
       wsConnection.onmessage = (event) => {
@@ -49,12 +50,14 @@ async function connectToRuntime() {
       wsConnection.onerror = (error) => {
         console.error('[AIOS Background] WebSocket error:', error);
         isConnected = false;
+        isAuthComplete = false;
         reject(error);
       };
 
       wsConnection.onclose = () => {
         console.log('[AIOS Background] Disconnected from Runtime');
         isConnected = false;
+        isAuthComplete = false;
         wsConnection = null;
 
         // Attempt reconnection after delay
@@ -78,6 +81,8 @@ function handleMessageFromRuntime(message) {
       console.log('[AIOS Background] Received auth token from Runtime:', message.payload.token);
       // Save the token globally to the worker instance so we can reuse it for subsequent requests
       self.activeAuthToken = message.payload.token;
+      isAuthComplete = true;  // Mark auth as complete
+      console.log('[AIOS Background] Auth handshake complete, ready to send messages');
       break;
 
 
@@ -126,6 +131,13 @@ function handleMessageFromRuntime(message) {
 function sendToRuntime(message) {
   if (!isConnected || !wsConnection) {
     console.warn('[AIOS Background] Not connected to Runtime, queuing message');
+    pendingMessages.push(message);
+    return false;
+  }
+
+  // Check if auth is complete (except for AUTH_REQUEST itself)
+  if (!isAuthComplete && message.type !== 'AUTH_REQUEST') {
+    console.warn('[AIOS Background] Auth not complete yet, queuing message');
     pendingMessages.push(message);
     return false;
   }
