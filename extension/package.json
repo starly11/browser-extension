@@ -1,9 +1,0 @@
-{
-  "devDependencies": {
-    "esbuild": "^0.28.1"
-  },
-  "scripts": {
-    "build": "esbuild src/content/index.js --bundle --outfile=src/content/dist.js && esbuild src/background/index.js --bundle --outfile=src/background/dist.js",
-    "watch": "esbuild src/content/index.js --bundle --outfile=src/content/dist.js --watch & esbuild src/background/index.js --bundle --outfile=src/background/dist.js --watch"
-  }
-}
