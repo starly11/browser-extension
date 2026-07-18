@@ -2,7 +2,6 @@
 (() => {
   // src/background/index.js
   var RUNTIME_WS_URL = "ws://127.0.0.1:8765";
-  var AUTH_TOKEN = "aios-local-token";
   var wsConnection = null;
   var isConnected = false;
   var pendingMessages = [];
@@ -20,7 +19,10 @@
             type: "AUTH_REQUEST",
             id: generateId(),
             taskId: null,
-            payload: { token: AUTH_TOKEN },
+            payload: {
+              workspaceId: "default-workspace"
+              // Runtime expects workspaceId, not token
+            },
             ts: (/* @__PURE__ */ new Date()).toISOString()
           };
           wsConnection.send(JSON.stringify(authMessage));
@@ -55,7 +57,7 @@
     console.log("[AIOS Background] Received from Runtime:", JSON.stringify(message, null, 2));
     switch (message.type) {
       case "AUTH_RESPONSE":
-        console.log("[AIOS Background] Saved session token:", message.payload.token);
+        console.log("[AIOS Background] Received auth token from Runtime:", message.payload.token);
         self.activeAuthToken = message.payload.token;
         break;
       case "RELAY_TO_ADAPTER":

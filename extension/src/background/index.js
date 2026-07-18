@@ -23,12 +23,14 @@ async function connectToRuntime() {
         console.log('[AIOS Background] Connected to Runtime');
         isConnected = true;
 
-        // Send AUTH_REQUEST
+        // Send AUTH_REQUEST with workspaceId (Runtime expects this)
         const authMessage = {
           type: 'AUTH_REQUEST',
           id: generateId(),
           taskId: null,
-          payload: { token: AUTH_TOKEN },
+          payload: { 
+            workspaceId: 'default-workspace'  // Runtime expects workspaceId, not token
+          },
           ts: new Date().toISOString()
         };
         wsConnection.send(JSON.stringify(authMessage));
@@ -73,8 +75,8 @@ function handleMessageFromRuntime(message) {
   switch (message.type) {
 
     case 'AUTH_RESPONSE':
-      console.log('[AIOS Background] Saved session token:', message.payload.token);
-      // Save the token globally to the worker instance so we can reuse it
+      console.log('[AIOS Background] Received auth token from Runtime:', message.payload.token);
+      // Save the token globally to the worker instance so we can reuse it for subsequent requests
       self.activeAuthToken = message.payload.token;
       break;
 
