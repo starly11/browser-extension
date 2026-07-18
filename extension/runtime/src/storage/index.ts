@@ -103,7 +103,7 @@ export class Storage {
   createWorkspace(name: string, projectPath: string): Workspace {
     const id = uuidv4();
     const now = new Date().toISOString();
-    
+
     const stmt = this.db.prepare(`
       INSERT INTO workspaces (id, name, projectPath, createdAt, lastActiveAt)
       VALUES (?, ?, ?, ?, ?)
@@ -116,7 +116,7 @@ export class Storage {
       INSERT INTO permissions (workspaceId, tool, state)
       VALUES (?, ?, 'ask')
     `);
-    
+
     for (const tool of defaultTools) {
       permStmt.run(id, tool);
     }
@@ -127,7 +127,7 @@ export class Storage {
   getWorkspace(id: string): Workspace {
     const wsStmt = this.db.prepare('SELECT * FROM workspaces WHERE id = ?');
     const workspace = wsStmt.get(id) as any;
-    
+
     if (!workspace) {
       throw new Error(`Workspace ${id} not found`);
     }
@@ -172,7 +172,7 @@ export class Storage {
   switchWorkspace(workspaceId: string): void {
     // Verify workspace exists
     this.getWorkspace(workspaceId);
-    
+
     // Update lastActiveAt
     const stmt = this.db.prepare(`
       UPDATE workspaces SET lastActiveAt = ? WHERE id = ?
@@ -181,12 +181,35 @@ export class Storage {
   }
 
   connectTab(workspaceId: string, tabId: string, providerId: string, agentMode: 'manual' | 'assistant' | 'autonomous' = 'manual'): void {
+    // Check if workspace exists before attaching a tab to it
+    const wsCheck = this.db.prepare('SELECT id FROM workspaces WHERE id = ?').get(workspaceId);
+
+    if (!wsCheck) {
+      // Create the missing workspace dynamically to prevent foreign key errors
+      const now = new Date().toISOString();
+      const wsStmt = this.db.prepare(`
+        INSERT INTO workspaces (id, name, projectPath, createdAt, lastActiveAt)
+        VALUES (?, ?, '.', ?, ?)
+      `);
+      wsStmt.run(workspaceId, `Workspace (${workspaceId.substring(0, 8)})`, now, now);
+
+      // Setup default tools permissions for it
+      const defaultTools = ['filesystem', 'writeFiles', 'terminal', 'git', 'browserAutomation', 'network'];
+      const permStmt = this.db.prepare(`
+        INSERT INTO permissions (workspaceId, tool, state)
+        VALUES (?, ?, 'ask')
+      `);
+      for (const tool of defaultTools) {
+        permStmt.run(workspaceId, tool);
+      }
+    }
+
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO workspace_tabs (workspaceId, tabId, providerId, agentMode)
       VALUES (?, ?, ?, ?)
     `);
     stmt.run(workspaceId, tabId, providerId, agentMode);
-    
+
     // Update workspace lastActiveAt
     this.switchWorkspace(workspaceId);
   }
@@ -224,7 +247,7 @@ export class Storage {
   createTask(workspaceId: string, prompt: string): Task {
     const id = uuidv4();
     const now = new Date().toISOString();
-    
+
     const stmt = this.db.prepare(`
       INSERT INTO tasks (id, workspaceId, prompt, status, steps, createdAt, updatedAt)
       VALUES (?, ?, ?, 'created', '[]', ?, ?)
@@ -237,7 +260,7 @@ export class Storage {
   getTask(id: string): Task {
     const stmt = this.db.prepare('SELECT * FROM tasks WHERE id = ?');
     const task = stmt.get(id) as any;
-    
+
     if (!task) {
       throw new Error(`Task ${id} not found`);
     }
@@ -255,11 +278,11 @@ export class Storage {
 
   updateTaskStatus(id: string, status: TaskStatus, step?: Record<string, unknown>): Task {
     const now = new Date().toISOString();
-    
+
     // Get current task to append step if provided
     const current = this.getTask(id);
     let steps = current.steps;
-    
+
     if (step) {
       steps = [...steps, { ...step, timestamp: now }];
     }
@@ -275,7 +298,7 @@ export class Storage {
   getTasksByWorkspace(workspaceId: string): Task[] {
     const stmt = this.db.prepare('SELECT * FROM tasks WHERE workspaceId = ? ORDER BY createdAt DESC');
     const rows = stmt.all(workspaceId) as any[];
-    
+
     return rows.map(row => ({
       id: row.id,
       workspaceId: row.workspaceId,
@@ -294,7 +317,7 @@ export class Storage {
   createSession(role: 'planner' | 'worker', tabId: string, providerId: string): ReasoningSession {
     const id = uuidv4();
     const now = new Date().toISOString();
-    
+
     const stmt = this.db.prepare(`
       INSERT INTO reasoning_sessions (id, role, tabId, providerId, status, createdAt)
       VALUES (?, ?, ?, ?, 'idle', ?)
@@ -307,7 +330,7 @@ export class Storage {
   getSession(id: string): ReasoningSession {
     const stmt = this.db.prepare('SELECT * FROM reasoning_sessions WHERE id = ?');
     const session = stmt.get(id) as any;
-    
+
     if (!session) {
       throw new Error(`ReasoningSession ${id} not found`);
     }
@@ -332,7 +355,7 @@ export class Storage {
   getSessionsByTab(tabId: string): ReasoningSession[] {
     const stmt = this.db.prepare('SELECT * FROM reasoning_sessions WHERE tabId = ?');
     const rows = stmt.all(tabId) as any[];
-    
+
     return rows.map(row => ({
       id: row.id,
       role: row.role as 'planner' | 'worker',
@@ -354,13 +377,13 @@ export class Storage {
   createAuthToken(workspaceId?: string): string {
     const value = uuidv4();
     const now = new Date().toISOString();
-    
+
     const stmt = this.db.prepare(`
       INSERT INTO auth_tokens (value, createdAt, workspaceId)
       VALUES (?, ?, ?)
     `);
     stmt.run(value, now, workspaceId || null);
-    
+
     return value;
   }
 
@@ -377,7 +400,7 @@ export class Storage {
   getInterruptedTasks(): Task[] {
     const stmt = this.db.prepare("SELECT * FROM tasks WHERE status IN ('planning', 'waiting_for_tool', 'tool_running', 'worker_running', 'delivering')");
     const rows = stmt.all() as any[];
-    
+
     return rows.map(row => ({
       id: row.id,
       workspaceId: row.workspaceId,

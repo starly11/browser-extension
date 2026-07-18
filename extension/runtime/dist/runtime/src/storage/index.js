@@ -156,6 +156,26 @@ class Storage {
         stmt.run(new Date().toISOString(), workspaceId);
     }
     connectTab(workspaceId, tabId, providerId, agentMode = 'manual') {
+        // Check if workspace exists before attaching a tab to it
+        const wsCheck = this.db.prepare('SELECT id FROM workspaces WHERE id = ?').get(workspaceId);
+        if (!wsCheck) {
+            // Create the missing workspace dynamically to prevent foreign key errors
+            const now = new Date().toISOString();
+            const wsStmt = this.db.prepare(`
+        INSERT INTO workspaces (id, name, projectPath, createdAt, lastActiveAt)
+        VALUES (?, ?, '.', ?, ?)
+      `);
+            wsStmt.run(workspaceId, `Workspace (${workspaceId.substring(0, 8)})`, now, now);
+            // Setup default tools permissions for it
+            const defaultTools = ['filesystem', 'writeFiles', 'terminal', 'git', 'browserAutomation', 'network'];
+            const permStmt = this.db.prepare(`
+        INSERT INTO permissions (workspaceId, tool, state)
+        VALUES (?, ?, 'ask')
+      `);
+            for (const tool of defaultTools) {
+                permStmt.run(workspaceId, tool);
+            }
+        }
         const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO workspace_tabs (workspaceId, tabId, providerId, agentMode)
       VALUES (?, ?, ?, ?)
